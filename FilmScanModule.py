@@ -411,7 +411,7 @@ class Film:
         self.curFrameNo -= 1
         return self.getNextFrame()
     
-    def getFileList(dir):
+    def getFileList(self, dir):
         list = [f for f in os.listdir(dir) if 
                     fnmatch.fnmatch(f, "*.jpg") and
                     os.path.isfile(os.path.join(dir, f))]
