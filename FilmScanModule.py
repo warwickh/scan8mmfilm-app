@@ -462,12 +462,12 @@ class Film:
             return None 
 
     def getFirstFrame(self):
-        fileList = Film.getFileList(Film.scanFolder)
+        fileList = self.getFileList(self.scanFolder)
         cnt = len(fileList)
         self.scanFileCount = cnt
         if cnt > 0 :
             self.curFrameNo = 0
-            return Frame(os.path.join(Film.scanFolder,fileList[self.curFrameNo]))
+            return Frame(os.path.join(self.scanFolder,fileList[self.curFrameNo]))
         else:
             self.curFrameNo = -1
             return None 
