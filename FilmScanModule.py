@@ -36,13 +36,13 @@ class Ini:
             Camera.ViewWidth = config[Ini.camera].getint('view_width')
             Camera.ViewHeight = config[Ini.camera].getint('view_height')
 
-            S8Film.Resolution = config[Ini.film]['s8_resolution']
-            S8Film.Framerate = config[Ini.film].getint('s8_framerate')
-            S8Film.StepsPrFrame = config[Ini.film].getint('s8_steps_pr_frame')
+            S8Film.Resolution = config[Ini.s8film]['resolution']
+            S8Film.Framerate = config[Ini.s8film].getint('framerate')
+            S8Film.StepsPrFrame = config[Ini.s8film].getint('steps_pr_frame')
 
-            R8Film.Resolution = config[Ini.film]['r8_resolution']
-            R8Film.Framerate = config[Ini.film].getint('r8_framerate')
-            R8Film.StepsPrFrame = config[Ini.film].getint('r8_steps_pr_frame')
+            R8Film.Resolution = config[Ini.r8film]['resolution']
+            R8Film.Framerate = config[Ini.r8film].getint('framerate')
+            R8Film.StepsPrFrame = config[Ini.r8film].getint('steps_pr_frame')
 
             S8Frame.frameCrop.load(config)
             S8Frame.whiteCrop.load(config)
@@ -50,8 +50,8 @@ class Ini:
             S8Frame.frameCrop.load(config)
             S8Frame.whiteCrop.load(config)
             S8Frame.holeCrop.load(config)
-            S8Frame.holeMinArea = config[Ini.frame].getint('s8_hole_min_area')
-            S8Frame.midy = config[Ini.frame].getint('s8_midy')
+            S8Frame.holeMinArea = config[Ini.s8frame].getint('hole_min_area')
+            S8Frame.midy = config[Ini.s8frame].getint('midy')
 
             R8Frame.frameCrop.load(config)
             R8Frame.whiteCrop.load(config)
@@ -59,13 +59,14 @@ class Ini:
             R8Frame.frameCrop.load(config)
             R8Frame.whiteCrop.load(config)
             R8Frame.holeCrop.load(config)
-            R8Frame.holeMinArea = config[Ini.frame].getint('r8_hole_min_area')
-            R8Frame.midy = config[Ini.frame].getint('r8_midy')
+            R8Frame.holeMinArea = config[Ini.r8frame].getint('hole_min_area')
+            R8Frame.midy = config[Ini.r8frame].getint('midy')
 
         else:
             Ini.saveConfig()
 
-        Frame.initScaleFactor()
+        S8Frame.initScaleFactor()
+        R8Frame.initScaleFactor()
         
     def saveConfig():
         config = configparser.ConfigParser()
@@ -116,14 +117,6 @@ class Ini:
 
         with open(inifile, 'w') as configfile:
             config.write(configfile)
-        
-def getAdjustableRects(format):
-    if format==S8Frame.format:
-        return [S8Frame.frameCrop, S8Frame.holeCrop, S8Frame.whiteCrop]
-    elif format==R8Frame.format:
-        return [R8Frame.frameCrop, R8Frame.holeCrop, R8Frame.whiteCrop]
-    else:
-        return None
 
 class App:
     format = 's8'
@@ -180,12 +173,6 @@ class Rect:
 
 class Frame:
 
-    def initScaleFactor():
-        Frame.ScaleFactor = Camera.ViewWidth/640.0 
-
-    def getHoleCropWidth():
-        return Frame.holeCrop.x2 - Frame.holeCrop.x1
-          
     def __init__(self, imagePathName=None,*,image=None, format="s8"):
         self.imagePathName = imagePathName
         if image is None and imagePathName is not None :
@@ -355,6 +342,15 @@ class S8Frame(Frame):
     holeCrop = Rect(f"{format}_hole_crop", 90, 0, 240, 276)  
     holeMinArea = 6000 # Adust to a size safely less than the average sprocket hole area
     ScaleFactor = 1.0 # overwritten by initScaleFactor()
+    
+    def getAdjustableRects():
+        return [S8Frame.frameCrop, S8Frame.holeCrop, S8Frame.whiteCrop]
+
+    def initScaleFactor():
+        S8Frame.ScaleFactor = Camera.ViewWidth/640.0 
+
+    def getHoleCropWidth():
+        return S8Frame.holeCrop.x2 - S8Frame.holeCrop.x1
 
     def __init__(self):
         super().__init__("s8")
@@ -379,6 +375,16 @@ class R8Frame(Frame):
     def __init__(self):
         super().__init__("r8")
 
+    def getAdjustableRects():
+        return [R8Frame.frameCrop, R8Frame.holeCrop, R8Frame.whiteCrop]
+    
+    def initScaleFactor():
+        R8Frame.ScaleFactor = Camera.ViewWidth/640.0 
+
+    def getHoleCropWidth():
+        return R8Frame.holeCrop.x2 - R8Frame.holeCrop.x1
+          
+
 class Film:
 
     filmFolder = os.path.join(defaultBaseDir, "film")
@@ -391,7 +397,16 @@ class Film:
         self.curFrameNo = -1
         self.p = None
         self.format=format
-     
+
+    def setFilmFolder(folder_path):
+        Film.filmFolder = folder_path
+
+    def setScanFolder(folder_path):
+        Film.scanFolder = folder_path
+    
+    def setCropFolder(folder_path):
+        Film.cropFolder = folder_path
+
     def getCurrentFrame(self):
         self.curFrameNo -= 1
         return self.getNextFrame()
@@ -575,8 +590,8 @@ class R8Film(Film):
     Framerate = 12
     StepsPrFrame = 80 # value for Standard 8
     
-    def __init__(self):
-        super().__init__("r8")
+    def __init__(self, name = "",):
+        super().__init__(name=name, format="r8")
 
 class S8Film(Film):
     format = "s8"
@@ -584,5 +599,5 @@ class S8Film(Film):
     Framerate = 24
     StepsPrFrame = 100 # value for Super 8
 
-    def __init__(self):
-        super().__init__("s8")
+    def __init__(self, name = "",):
+        super().__init__(name=name, format="s8")

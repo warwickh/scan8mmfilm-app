@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import pyqtSignal, QTimer
 from PyQt5 import QtCore, QtWidgets
-from FilmScanModule import App, Ini, Camera, getAdjustableRects
+from FilmScanModule import App, Ini, Camera
 import sys
 from time import sleep
 import cv2
@@ -53,7 +53,7 @@ class Window(QMainWindow, Ui_MainWindow):
             self.horizontalLayout_4.addWidget(self.qpicamera2)
         self.connectSignalsSlots()
         self.lblHoleCrop.setMinimumWidth(Frame.getHoleCropWidth())
-        self.adjustableRects = getAdjustableRects()
+        self.adjustableRects = Frame.getAdjustableRects()
         for r in self.adjustableRects:
             self.comboBox.addItem(r.name)
         self.adjRectIx = 0
@@ -95,7 +95,7 @@ class Window(QMainWindow, Ui_MainWindow):
     def selectFilmFolder(self, *, text="Select Film Folder"):
         dir = QtWidgets.QFileDialog.getExistingDirectory(caption=text, directory=os.path.commonpath([Film.filmFolder]))
         if dir:
-            Film.filmFolder = os.path.abspath(dir)
+            Film.setfilmFolder(os.path.abspath(dir))
             return True
         return False
     
@@ -103,7 +103,7 @@ class Window(QMainWindow, Ui_MainWindow):
     def selectScanFolder(self, *, text="Select Scan Folder", init=True):
         dir = QtWidgets.QFileDialog.getExistingDirectory(caption=text, directory=os.path.commonpath([Film.scanFolder]))
         if dir:
-            Film.scanFolder = os.path.abspath(dir)
+            Film.setScanFolder(os.path.abspath(dir))
             if init:
                 QTimer.singleShot(100, self.initScanner)
             return True
@@ -112,7 +112,7 @@ class Window(QMainWindow, Ui_MainWindow):
     def selectCropFolder(self, *, text="Select Crop Folder", init=True):
         dir = QtWidgets.QFileDialog.getExistingDirectory(caption=text, directory=os.path.commonpath([Film.cropFolder]))
         if dir:
-            Film.cropFolder = os.path.abspath(dir)
+            Film.setCropFolder(os.path.abspath(dir))
             if init:
                 self.updateInfoPanel()
             return True
