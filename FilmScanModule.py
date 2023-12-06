@@ -14,15 +14,20 @@ inifile = os.path.join(os.path.dirname(__file__),'scanner.ini')
 defaultBaseDir = "c:\\data\\film8" if os.sep == "\\" else "/home/pi/film8"
 
 class Ini:
+    app = 'app'
     camera = 'camera'
     paths = 'paths'
-    film = 'film'
-    frame = 'frame'
+    s8film = 's8_film'
+    s8frame = 's8_frame'
+    r8film = 'r8_film'
+    r8frame = 'r8_frame'
 
     def loadConfig():
         config = configparser.ConfigParser()
 
         if len(config.read(inifile)) == 1:
+
+            App.format = config[Ini.app]['format']
 
             Film.filmFolder = config[Ini.paths]['film_folder']
             Film.scanFolder = config[Ini.paths]['scan_folder']
@@ -31,16 +36,31 @@ class Ini:
             Camera.ViewWidth = config[Ini.camera].getint('view_width')
             Camera.ViewHeight = config[Ini.camera].getint('view_height')
 
-            Film.Resolution = config[Ini.film]['resolution']
-            Film.Framerate = config[Ini.film].getint('framerate')
-            Film.StepsPrFrame = config[Ini.film].getint('steps_pr_frame')
+            S8Film.Resolution = config[Ini.film]['s8_resolution']
+            S8Film.Framerate = config[Ini.film].getint('s8_framerate')
+            S8Film.StepsPrFrame = config[Ini.film].getint('s8_steps_pr_frame')
 
-            Frame.frameCrop.load(config)
-            Frame.whiteCrop.load(config)
-            Frame.holeCrop.load(config)
+            R8Film.Resolution = config[Ini.film]['r8_resolution']
+            R8Film.Framerate = config[Ini.film].getint('r8_framerate')
+            R8Film.StepsPrFrame = config[Ini.film].getint('r8_steps_pr_frame')
 
-            Frame.holeMinArea = config[Ini.frame].getint('hole_min_area')
-            Frame.midy = config[Ini.frame].getint('midy')
+            S8Frame.frameCrop.load(config)
+            S8Frame.whiteCrop.load(config)
+            S8Frame.holeCrop.load(config)
+            S8Frame.frameCrop.load(config)
+            S8Frame.whiteCrop.load(config)
+            S8Frame.holeCrop.load(config)
+            S8Frame.holeMinArea = config[Ini.frame].getint('s8_hole_min_area')
+            S8Frame.midy = config[Ini.frame].getint('s8_midy')
+
+            R8Frame.frameCrop.load(config)
+            R8Frame.whiteCrop.load(config)
+            R8Frame.holeCrop.load(config)
+            R8Frame.frameCrop.load(config)
+            R8Frame.whiteCrop.load(config)
+            R8Frame.holeCrop.load(config)
+            R8Frame.holeMinArea = config[Ini.frame].getint('r8_hole_min_area')
+            R8Frame.midy = config[Ini.frame].getint('r8_midy')
 
         else:
             Ini.saveConfig()
@@ -49,6 +69,10 @@ class Ini:
         
     def saveConfig():
         config = configparser.ConfigParser()
+
+        if not config.has_section(Ini.app):
+            config[Ini.app] = {}
+        config[Ini.app]['format'] = App.format
 
         if not config.has_section(Ini.paths):
             config[Ini.paths] = {}
@@ -61,26 +85,48 @@ class Ini:
         config[Ini.camera]['view_width'] = str(Camera.ViewWidth)
         config[Ini.camera]['view_height'] = str(Camera.ViewHeight)
 
-        if not config.has_section(Ini.film):
-            config[Ini.film] = {}
-        config[Ini.film]['resolution'] = Film.Resolution
-        config[Ini.film]['framerate']  = str(Film.Framerate)
-        config[Ini.film]['steps_pr_frame'] = str(Film.StepsPrFrame)
+        if not config.has_section(Ini.s8film):
+            config[Ini.s8film] = {}
+        config[Ini.s8film]['resolution'] = S8Film.Resolution
+        config[Ini.s8film]['framerate']  = str(S8Film.Framerate)
+        config[Ini.s8film]['steps_pr_frame'] = str(S8Film.StepsPrFrame)
 
-        Frame.frameCrop.save(config)
-        Frame.whiteCrop.save(config)
-        Frame.holeCrop.save(config)
+        if not config.has_section(Ini.r8film):
+            config[Ini.r8film] = {}
+        config[Ini.r8film]['resolution'] = R8Film.Resolution
+        config[Ini.r8film]['framerate']  = str(R8Film.Framerate)
+        config[Ini.r8film]['steps_pr_frame'] = str(R8Film.StepsPrFrame)
 
-        if not config.has_section(Ini.frame):
-            config[Ini.frame] = {}
-        config[Ini.frame]['hole_min_area'] = str(Frame.holeMinArea) 
-        config[Ini.frame]['midy'] = str(Frame.midy) 
+        if not config.has_section(Ini.s8frame):
+            config[Ini.s8frame] = {}
+        config[Ini.s8frame]['hole_min_area'] = str(S8Frame.holeMinArea) 
+        config[Ini.s8frame]['midy'] = str(S8Frame.midy) 
+        
+        if not config.has_section(Ini.r8frame):
+            config[Ini.r8frame] = {}
+        config[Ini.r8frame]['hole_min_area'] = str(R8Frame.holeMinArea) 
+        config[Ini.r8frame]['midy'] = str(R8Frame.midy) 
+        
+        S8Frame.frameCrop.save(config)
+        S8Frame.whiteCrop.save(config)
+        S8Frame.holeCrop.save(config)
+        R8Frame.frameCrop.save(config)
+        R8Frame.whiteCrop.save(config)
+        R8Frame.holeCrop.save(config)
 
         with open(inifile, 'w') as configfile:
             config.write(configfile)
         
-def getAdjustableRects():
-    return [Frame.frameCrop, Frame.holeCrop, Frame.whiteCrop]
+def getAdjustableRects(format):
+    if format==S8Frame.format:
+        return [S8Frame.frameCrop, S8Frame.holeCrop, S8Frame.whiteCrop]
+    elif format==R8Frame.format:
+        return [R8Frame.frameCrop, R8Frame.holeCrop, R8Frame.whiteCrop]
+    else:
+        return None
+
+class App:
+    format = 's8'
 
 class Camera:
     ViewWidth = 1640
@@ -134,41 +180,20 @@ class Rect:
 
 class Frame:
 
-    # Default x,y values for hole mid relative to holeCrop (0,0) 
-    # from camera view image resized to 640x480
-    # N.B. The midy value is used to position the frame near the center of the camera view during scanning
-    midx = 64   # always overwitten 
-    midy = 120 
-    
-    # Needs to be adjusted to fit the a film frame as seen in the camera view image
-    # x1,y1 are relative to the top sprocket hole center
-    frameCrop = Rect("frame_crop", 146, 28, 146+814, 28+565)
-
-    # Must be adjusted to an always white area in the camera view image resized to 640x480
-    whiteCrop = Rect("white_crop", 562, 130, 562+12, 110+130)
-
-    # Must be adjusted to the left top area of the film containing the 
-    # upper sprocket hole in the camera view image resized to 640x480
-    holeCrop = Rect("hole_crop", 90, 0, 240, 276)  
-
-    holeMinArea = 6000 # Adust to a size safely less than the average sprocket hole area
-        
-    ScaleFactor = 1.0 # overwritten by initScaleFactor()
-
     def initScaleFactor():
         Frame.ScaleFactor = Camera.ViewWidth/640.0 
 
     def getHoleCropWidth():
         return Frame.holeCrop.x2 - Frame.holeCrop.x1
           
-    def __init__(self, imagePathName=None,*,image=None):
+    def __init__(self, imagePathName=None,*,image=None, format="s8"):
         self.imagePathName = imagePathName
         if image is None and imagePathName is not None :
             self.imagePathName = imagePathName
             self.image = cv2.imread(imagePathName)
         elif image is not None :
             self.image = image
-        
+        self.format=format
         # cX is important in order to crop the frame correctly 
         # (the film can move slightly from side to side in its track or the holes placement might be off)
         self.cX = Frame.midx 
@@ -312,22 +337,60 @@ class Frame:
 
         self.locateHoleResult = locateHoleResult
         return locateHoleResult
-            
-class Film:
 
-    Resolution = "720x540"
-    Framerate = 12
-    StepsPrFrame = 80 # value for Standard 8
+class S8Frame(Frame):
+    format = "s8"
+    # Default x,y values for hole mid relative to holeCrop (0,0) 
+    # from camera view image resized to 640x480
+    # N.B. The midy value is used to position the frame near the center of the camera view during scanning
+    midx = 64   # always overwitten 
+    midy = 120 
+    # Needs to be adjusted to fit the a film frame as seen in the camera view image
+    # x1,y1 are relative to the top sprocket hole center
+    frameCrop = Rect(f"{format}_frame_crop", 146, 28, 146+814, 28+565)
+    # Must be adjusted to an always white area in the camera view image resized to 640x480
+    whiteCrop = Rect(f"{format}_white_crop", 562, 130, 562+12, 110+130)
+    # Must be adjusted to the left top area of the film containing the 
+    # upper sprocket hole in the camera view image resized to 640x480
+    holeCrop = Rect(f"{format}_hole_crop", 90, 0, 240, 276)  
+    holeMinArea = 6000 # Adust to a size safely less than the average sprocket hole area
+    ScaleFactor = 1.0 # overwritten by initScaleFactor()
+
+    def __init__(self):
+        super().__init__("s8")
+
+class R8Frame(Frame):
+    format = "r8"
+    # Default x,y values for hole mid relative to holeCrop (0,0) 
+    # from camera view image resized to 640x480
+    # N.B. The midy value is used to position the frame near the center of the camera view during scanning
+    midx = 64   # always overwitten 
+    midy = 120 
+    # Needs to be adjusted to fit the a film frame as seen in the camera view image
+    # x1,y1 are relative to the top sprocket hole center
+    frameCrop = Rect(f"{format}_frame_crop", 146, 28, 146+814, 28+565)
+    # Must be adjusted to an always white area in the camera view image resized to 640x480
+    whiteCrop = Rect(f"{format}_white_crop", 562, 130, 562+12, 110+130)
+    # Must be adjusted to the left top area of the film containing the 
+    # upper sprocket hole in the camera view image resized to 640x480
+    holeCrop = Rect(f"{format}_hole_crop", 90, 0, 240, 276)  
+    holeMinArea = 6000 # Adust to a size safely less than the average sprocket hole area
+    ScaleFactor = 1.0 # overwritten by initScaleFactor()
+    def __init__(self):
+        super().__init__("r8")
+
+class Film:
 
     filmFolder = os.path.join(defaultBaseDir, "film")
     scanFolder = os.path.join(defaultBaseDir, "scan")
     cropFolder = os.path.join(defaultBaseDir, "crop")
 
-    def __init__(self, name = ""):
+    def __init__(self, name = "", format="r8"):
         self.name = name
         self.scanFileCount = Film.getFileCount(Film.scanFolder)  # - number of *.jpg files in scan directory
         self.curFrameNo = -1
         self.p = None
+        self.format=format
      
     def getCurrentFrame(self):
         self.curFrameNo -= 1
@@ -481,8 +544,7 @@ class Film:
                 "-s", Film.Resolution,
                 "-preset", "ultrafast", filmPathName
                 ])
-  
- 
+   
     def handle_stderr(self):
         data = self.p.readAllStandardError()
         stderr = bytes(data).decode("utf8")
@@ -507,3 +569,20 @@ class Film:
         self.filmDone()
         self.p = None        
 
+class R8Film(Film):
+    format = "r8"
+    Resolution = "720x540"
+    Framerate = 12
+    StepsPrFrame = 80 # value for Standard 8
+    
+    def __init__(self):
+        super().__init__("r8")
+
+class S8Film(Film):
+    format = "s8"
+    Resolution = "720x540"
+    Framerate = 24
+    StepsPrFrame = 100 # value for Super 8
+
+    def __init__(self):
+        super().__init__("s8")

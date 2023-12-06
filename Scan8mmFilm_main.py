@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import pyqtSignal, QTimer
 from PyQt5 import QtCore, QtWidgets
-from FilmScanModule import Ini, Camera, Frame, Film, getAdjustableRects
+from FilmScanModule import App, Ini, Camera, getAdjustableRects
 import sys
 from time import sleep
 import cv2
@@ -22,6 +22,12 @@ try:
 except ImportError:                                                                                                                                                                                            
     picamera2_present = False
  
+if App.format=="s8":
+    from FilmScanModule import S8Frame as Frame
+    from FilmScanModule import S8Film as Film
+elif App.format== "r8":
+    from FilmScanModule import R8Frame as Frame
+    from FilmScanModule import R8Film as Film
 
 if picamera2_present:
     picam2 = Picamera2()
