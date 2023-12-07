@@ -83,8 +83,8 @@ def getAdjustableRects():
     return [Frame.frameCrop, Frame.holeCrop, Frame.whiteCrop]
 
 class Camera:
-    ViewWidth = 1640
-    ViewHeight = 1232
+    ViewWidth = 3280#1640
+    ViewHeight = 1464#1232
 
 class Rect:
     def __init__(self, name, x1, y1, x2, y2):
@@ -245,9 +245,17 @@ class Frame:
         self.imageSmall = cv2.resize(self.image, (640, 480))
         # the image crop with the sprocket hole 
         img = self.imageSmall[Frame.holeCrop.y1:Frame.holeCrop.y2, Frame.holeCrop.x1:Frame.holeCrop.x2]
+        #cv2.imwrite("test1.png", img)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        #cv2.imwrite("test2.png", img)
         self.whiteTreshold = self.getWhiteThreshold(self.imageSmall)
-        ret, self.imageHoleCrop = cv2.threshold(img, self.whiteTreshold, 255, 0) 
+        #print(f"self.whiteTreshold {self.whiteTreshold}")
+        self.whiteTreshold = 130
+        for i in range (120, 260, 10):
+            ret, out = cv2.threshold(img, i, 255, 0)
+            cv2.imwrite(f"/home/warwickh/{i}_test.png", out) 
+        ret, self.imageHoleCrop = cv2.threshold(img, self.whiteTreshold, 255, 0)
+        #cv2.imwrite("test3.png", self.imageHoleCrop)
         contours, hierarchy = cv2.findContours(self.imageHoleCrop, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         # RETR_LIST: retrieves all of the contours without establishing any hierarchical relationships.
         # CHAIN_APPROX_SIMPLE: compresses horizontal, vertical, and diagonal segments and leaves only 
