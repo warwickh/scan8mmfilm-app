@@ -24,7 +24,9 @@ except ImportError:
  
 
 if picamera2_present:
-    picam2 = Picamera2()
+    tuning = Picamera2.load_tuning_file("imx219_noir.json")
+    picam2 = Picamera2(tuning=tuning)
+    #picam2 = Picamera2()
     preview_config = picam2.create_preview_configuration(main={"size": (Camera.ViewWidth, Camera.ViewHeight)},
         transform=Transform(vflip=True,hflip=True))
     picam2.configure(preview_config)
