@@ -513,6 +513,7 @@ class Window(QMainWindow, Ui_MainWindow):
     def showHoleCrop(self): 
         if picamera2_present:
             self.enableButtons(busy=True)
+            print(f"Setting capture config RGB888 size: {Camera.ViewWidth}, {Camera.ViewHeight}")
             capture_config = picam2.create_still_configuration(main={"format": "RGB888","size": (Camera.ViewWidth, Camera.ViewHeight)},transform=Transform(vflip=True,hflip=True))
             # This causes a call to capture_done when done 
             picam2.switch_mode_and_capture_array(capture_config, "main", signal_function=self.qpicamera2.signal_done)

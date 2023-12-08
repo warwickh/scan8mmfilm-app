@@ -61,6 +61,8 @@ def initGpio() :
     GPIO.setup(photoint, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.setup((18, 15, 14), GPIO.OUT)
 
+    GPIO.output(ledon, GPIO.HIGH)  # turn on LED
+    
     pwm = GPIO.PWM(6, 40)  # set PWM channel, hz
     print("GPIO setup")
     
