@@ -432,7 +432,7 @@ class Frame:
         #outputImage    = cv2.warpAffine(self.imageSmall,M,(self.imageSmall.shape[1],self.imageSmall.shape[0]))
         #cv2.imwrite('output.jpg',outputImage)
         if status:
-            self.cX = cX-Frame.holeCrop.x1
+            self.cX = int(cX-Frame.holeCrop.x1)
             self.cY = cY
         
         
@@ -488,8 +488,8 @@ class Frame:
             except ZeroDivisionError:
                 if dbg >= 2: print("no center")
                 locateHoleResult = 3 # no center
-                self.cX = oldcX
-                self.cY = oldcY # midy
+                #self.cX = oldcX
+                #self.cY = oldcY # midy
         else :
             #self.cX = oldcX
             #self.cY = oldcY
@@ -499,11 +499,11 @@ class Frame:
  
         p1 = (0, self.cY) 
         p2 = (Frame.holeCrop.x2-Frame.holeCrop.x1, self.cY)
-        # print(p1, p2)
+        print(p1, p2)
         cv2.line(self.imageHoleCrop, p1, p2, (0, 255, 0), 3)
         p1 = (self.cX, 0) 
         p2 = (self.cX, Frame.holeCrop.y2-Frame.holeCrop.y1) 
-        # print(p1, p2)
+        print(p1, p2)
         cv2.line(self.imageHoleCrop, p1, p2, (0, 255, 0), 3)
         
         # show target midy
