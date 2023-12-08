@@ -551,6 +551,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.motorStart()
         self.threadScan = QThreadScan(self.film)
         self.sigToScanTread.connect(self.threadScan.on_source)
+        
         self.threadScan.sigProgress.connect(self.scanProgress)
         self.threadScan.sigStateChange.connect(self.scanStateChange)
         self.threadScan.start()
@@ -609,7 +610,9 @@ class QThreadScan(QtCore.QThread):
         self.film = film
         self.cmd = 1 # run 
         self.midy = Frame.midy
-        self.tolerance = 6
+        self.tolerance = 5
+        self.pixelsPerStep = 1
+
         self.frameNo = Film.getFileCount(Film.scanFolder)
         
     def on_source(self, cmd):
@@ -617,7 +620,9 @@ class QThreadScan(QtCore.QThread):
         
     def saveFrame(self):
         imgname = os.path.join(Film.scanFolder, 'scan' + format(self.frameNo, '06') + '.jpg')             
+        print("pre cap")
         request = picam2.capture_request()
+        print("post cap")
         request.save("main", imgname)
         print("imgname", imgname)
         #print(request.get_metadata()) # this is the metadata for this image
@@ -634,6 +639,7 @@ class QThreadScan(QtCore.QThread):
         while self.cmd == 1 :
             try:
                 pidevi.spoolStart()
+                print(f"Setting capture config RGB888 size: {Camera.ViewWidth}, {Camera.ViewHeight}")
                 capture_config = picam2.create_still_configuration(main={"format": "RGB888","size": (Camera.ViewWidth, Camera.ViewHeight)},transform=Transform(vflip=True,hflip=True))
                 image = picam2.switch_mode_and_capture_array(capture_config, "main") #, signal_function=self.qpicamera2.signal_done)
                 self.frame = Frame(image=image)
@@ -654,22 +660,27 @@ class QThreadScan(QtCore.QThread):
                         self.cmd = 3
                         break
                            
-                tolstep = 2
+                #tolstep = 2
                 
+                tolstep = int(abs(self.frame.cY-self.midy)/self.pixelsPerStep)
+                print(f"{self.frame.cY}-----------------------------------------------")
                 if self.frame.cY > self.midy + self.tolerance:
-                    self.sigProgress.emit(f"{self.frameNo} adjusting up", self.frameNo, self.frame)  
+                    self.sigProgress.emit(f"{self.frameNo} adjusting up", self.frameNo, self.frame)
+                    print(f"Moving up {abs(self.frame.cY-self.midy)} pixels {tolstep} steps")  
                     pidevi.stepCw(tolstep)
-                    sleep(.2)  
+                    sleep(.4)  
                     oldY = self.frame.cY
 
-                if self.frame.cY < self.midy - self.tolerance:
+                elif self.frame.cY < self.midy - self.tolerance:
                     self.sigProgress.emit(f"{self.frameNo} adjusting down", self.frameNo, self.frame)  
+                    print(f"Moving up {abs(self.frame.cY-self.midy)} pixels {tolstep} steps")  
                     pidevi.stepCcw(tolstep)
-                    sleep(.2) 
+                    sleep(.4) 
                     oldY = self.frame.cY 
                     
-                if (self.frame.cY <= self.midy + self.tolerance) and (self.frame.cY >= self.midy - self.tolerance):
+                elif (self.frame.cY <= self.midy + self.tolerance) and (self.frame.cY >= self.midy - self.tolerance):
                     self.saveFrame() 
+                    print(f"{self.frame.cY}=========================================================")                
                     pidevi.stepCw(Film.StepsPrFrame)
                     self.frameNo += 1
                     adjustedY = 0
