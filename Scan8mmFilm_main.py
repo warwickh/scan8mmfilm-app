@@ -609,9 +609,7 @@ class QThreadScan(QtCore.QThread):
         self.film = film
         self.cmd = 1 # run 
         self.midy = Frame.midy
-        self.tolerance = 5
-        self.pixelsPerStep = 1
-
+        self.tolerance = 6
         self.frameNo = Film.getFileCount(Film.scanFolder)
         
     def on_source(self, cmd):
@@ -656,27 +654,22 @@ class QThreadScan(QtCore.QThread):
                         self.cmd = 3
                         break
                            
-                #tolstep = 2
+                tolstep = 2
                 
-                tolstep = int(abs(self.frame.cY-self.midy)/self.pixelsPerStep)
-                print(f"{self.frame.cY}-----------------------------------------------")
                 if self.frame.cY > self.midy + self.tolerance:
-                    self.sigProgress.emit(f"{self.frameNo} adjusting up", self.frameNo, self.frame)
-                    print(f"Moving up {abs(self.frame.cY-self.midy)} pixels {tolstep} steps")  
+                    self.sigProgress.emit(f"{self.frameNo} adjusting up", self.frameNo, self.frame)  
                     pidevi.stepCw(tolstep)
-                    sleep(.4)  
+                    sleep(.2)  
                     oldY = self.frame.cY
 
-                elif self.frame.cY < self.midy - self.tolerance:
+                if self.frame.cY < self.midy - self.tolerance:
                     self.sigProgress.emit(f"{self.frameNo} adjusting down", self.frameNo, self.frame)  
-                    print(f"Moving up {abs(self.frame.cY-self.midy)} pixels {tolstep} steps")  
                     pidevi.stepCcw(tolstep)
-                    sleep(.4) 
+                    sleep(.2) 
                     oldY = self.frame.cY 
                     
-                elif (self.frame.cY <= self.midy + self.tolerance) and (self.frame.cY >= self.midy - self.tolerance):
+                if (self.frame.cY <= self.midy + self.tolerance) and (self.frame.cY >= self.midy - self.tolerance):
                     self.saveFrame() 
-                    print(f"{self.frame.cY}=========================================================")                
                     pidevi.stepCw(Film.StepsPrFrame)
                     self.frameNo += 1
                     adjustedY = 0
