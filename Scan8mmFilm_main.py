@@ -27,7 +27,9 @@ if picamera2_present:
     tuning = Picamera2.load_tuning_file("imx219_noir.json")
     picam2 = Picamera2(tuning=tuning)
     #picam2 = Picamera2()
-    preview_config = picam2.create_preview_configuration(main={"size": (Camera.ViewWidth, Camera.ViewHeight)},
+    #preview_config = picam2.create_preview_configuration(main={"size": (Camera.ViewWidth, Camera.ViewHeight)},
+    #    transform=Transform(vflip=True,hflip=True))
+    preview_config = picam2.create_preview_configuration(main={"size": (3280, 2464)},
         transform=Transform(vflip=True,hflip=True))
     picam2.configure(preview_config)
     
@@ -78,6 +80,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.actionExit.triggered.connect(self.doClose)
         self.actionAbout.triggered.connect(self.about)
         if  picamera2_present:
+            print("picam why?")
             self.qpicamera2.done_signal.connect(self.capture_done)
 
         self.actionSelect_Film_Folder.triggered.connect(self.selectFilmFolder)
@@ -147,6 +150,7 @@ class Window(QMainWindow, Ui_MainWindow):
         if self.rbtnScan.isChecked():
             self.showInfo("Mode Scan")
             if picamera2_present:            
+                print("picam why2")
                 self.lblImage.hide()
                 self.qpicamera2.show()
             if self.frame is None:
@@ -157,6 +161,7 @@ class Window(QMainWindow, Ui_MainWindow):
             self.lblImage.show()
             if picamera2_present:            
                 self.qpicamera2.hide() 
+                print("picam why3")
             if self.frame is not None and self.frame.imagePathName is not None:
                 self.refreshFrame()
             else:
@@ -318,6 +323,7 @@ class Window(QMainWindow, Ui_MainWindow):
             self.motorStop()
         
     def capture_done(self,job):
+        print("picam why4")
         image = picam2.wait(job)
         # print("picture taken!")
         sleep(0.5)
@@ -611,7 +617,7 @@ class QThreadScan(QtCore.QThread):
         self.cmd = 1 # run 
         self.midy = Frame.midy
         self.tolerance = 5
-        self.pixelsPerStep = 1
+        self.pixelsPerStep = 0.8
 
         self.frameNo = Film.getFileCount(Film.scanFolder)
         
@@ -655,25 +661,26 @@ class QThreadScan(QtCore.QThread):
                 if oldY != 0 and oldY == self.frame.cY :
                     # adjustment failed - film stuck
                     stuckCount += 1
-                    if stuckCount > 5:
+                    if stuckCount > 20:
                         # film really really stuck
                         self.cmd = 3
                         break
                            
-                #tolstep = 2
                 
-                tolstep = int(abs(self.frame.cY-self.midy)/self.pixelsPerStep)
+                
+                #tolstep = int(abs(self.frame.cY-self.midy)/self.pixelsPerStep)
+                tolstep = 2
                 print(f"{self.frame.cY}-----------------------------------------------")
                 if self.frame.cY > self.midy + self.tolerance:
                     self.sigProgress.emit(f"{self.frameNo} adjusting up", self.frameNo, self.frame)
-                    print(f"Moving up {abs(self.frame.cY-self.midy)} pixels {tolstep} steps")  
+                    print(f"{self.frame.cY} lower than {self.midy} so Moving up {abs(self.frame.cY-self.midy)} pixels {tolstep} steps")  
                     pidevi.stepCw(tolstep)
                     sleep(.4)  
                     oldY = self.frame.cY
 
                 elif self.frame.cY < self.midy - self.tolerance:
                     self.sigProgress.emit(f"{self.frameNo} adjusting down", self.frameNo, self.frame)  
-                    print(f"Moving up {abs(self.frame.cY-self.midy)} pixels {tolstep} steps")  
+                    print(f"{self.frame.cY} higher than {self.midy} so Moving down {abs(self.frame.cY-self.midy)} pixels {tolstep} steps")  
                     pidevi.stepCcw(tolstep)
                     sleep(.4) 
                     oldY = self.frame.cY 

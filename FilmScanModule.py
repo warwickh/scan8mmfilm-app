@@ -337,7 +337,7 @@ class Frame:
         roi = [0.10,0.16,0.3,0.7]       # region-of-interest - set as small as possible
         thresholds = [0.5,0.2]          # edge thresholds; first one higher, second one lower
         filterSize = 25                 # smoothing kernel - leave it untouched
-        minSize = 0.09
+        minSize = 0.08
         horizontal=True
         img=self.imageSmall
         dy,dx,dz = img.shape
@@ -390,9 +390,11 @@ class Frame:
         if minSprocketSize<sprocketSize and sprocketSize<(outerHigh-outerLow) :
             sprocketCenter = (innerHigh+innerLow)//2
             print(f"Valid sprocket size {sprocketSize}")
+            locateHoleResult = 0
         else:
             sprocketCenter = dy//2
             sprocketSize   = 0
+            locateHoleResult = 4
         xShift = 0
         if horizontal and sprocketSize>0:
             rx0 = x0
@@ -416,13 +418,13 @@ class Frame:
             print(f"Try right edge {x0+xShift} cx half-width {(x1-x0)/2} actual edge minus half width {x0+xShift-((x1-x0)/2)}")
         print(f"InnerLow {innerLow} InnerHigh {innerHigh} Sprocketcentre {sprocketCenter}")
         #return (xShift,dy//2-sprocketCenter)
-        cY = dy//2-sprocketCenter
+        #cY = dy//2-sprocketCenter
         cX = int(x0+xShift-((x1-x0)/2)) #calculated centre of hole from left of scan
         oldcX = self.cX
         oldcY = self.cY  
         self.cX = cX-Frame.holeCrop.x1
-        self.cY = cY
-        locateHoleResult = 0
+        self.cY = sprocketCenter
+        #locateHoleResult = 0
 
         """
         self.area = area_size
