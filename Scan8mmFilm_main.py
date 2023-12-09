@@ -253,7 +253,7 @@ class Window(QMainWindow, Ui_MainWindow):
             if picamera2_present:
                 self.enableButtons(busy=True)  
                 self.motorStart()
-                pidevi.stepCcw(2)
+                pidevi.stepCcw(4)
                 pidevi.spoolStart()
                 self.showHoleCrop()
         else:
@@ -269,7 +269,7 @@ class Window(QMainWindow, Ui_MainWindow):
             if picamera2_present:
                 self.enableButtons(busy=True)  
                 self.motorStart()
-                pidevi.stepCw(2)  
+                pidevi.stepCw(4)  
                 pidevi.spoolStart()
                 self.showHoleCrop()
         else:
@@ -661,7 +661,7 @@ class QThreadScan(QtCore.QThread):
                 if oldY != 0 and oldY == self.frame.cY :
                     # adjustment failed - film stuck
                     stuckCount += 1
-                    if stuckCount > 20:
+                    if stuckCount > 200:
                         # film really really stuck
                         self.cmd = 3
                         break
@@ -669,7 +669,7 @@ class QThreadScan(QtCore.QThread):
                 
                 
                 #tolstep = int(abs(self.frame.cY-self.midy)/self.pixelsPerStep)
-                tolstep = 2
+                tolstep = 4
                 print(f"{self.frame.cY}-----------------------------------------------")
                 if self.frame.cY > self.midy + self.tolerance:
                     self.sigProgress.emit(f"{self.frameNo} adjusting up", self.frameNo, self.frame)
