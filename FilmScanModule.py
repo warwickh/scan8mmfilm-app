@@ -292,7 +292,7 @@ class Frame:
         sprocketSize    = innerHigh-innerLow
         minSprocketSize = int(minSize*dy)
         print(f"minSprocketSize {minSprocketSize}<sprocketSize {sprocketSize} {minSprocketSize<sprocketSize} and sprocketSize<(outerHigh-outerLow) {sprocketSize<(outerHigh-outerLow)}")
-        if minSprocketSize<sprocketSize and sprocketSize<(outerHigh-outerLow) :
+        if minSprocketSize<sprocketSize and sprocketSize<(outerHigh-outerLow) and sprocketSize<100 :
             sprocketCenter = (innerHigh+innerLow)//2
             print(f"Valid sprocket size {sprocketSize}")
         else:
