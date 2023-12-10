@@ -529,7 +529,7 @@ class Window(QMainWindow, Ui_MainWindow):
     def motorStart(self):
         if self.rbtnScan.isChecked():
             self.motorTicks = 0
-            self.timer.start(2000)
+            self.timer.start(500)
             pidevi.startScanner()
             pidevi.spoolStart()
 
