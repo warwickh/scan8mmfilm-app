@@ -77,7 +77,7 @@ def spoolStop():
     pwm.ChangeDutyCycle(0)
     GPIO.output(pin_forward, GPIO.LOW)
     GPIO.output(pin_backward, GPIO.LOW)
-    GPIO.output(STEPON, GPIO.LOW)
+    #GPIO.output(STEPON, GPIO.LOW)
 
 def rewind():
     pwm.ChangeDutyCycle(50)
