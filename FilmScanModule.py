@@ -239,93 +239,6 @@ class Frame:
                 wco = i-8 #6
                 break
         return wco        
-      
-      
-    ## simple sprocket detection algorithm
-    ## returns the detected sprocket position
-    ## relative to vertical scan center and left horizontal edge
-    def detectSprocketPos(self, img, roi = [0.11,0.16,0.2,0.8], # region-of-interest - set as small as possible
-                               thresholds = [0.5,0.2],          # edge thresholds; first one higher, second one lower
-                               filterSize = 25,                 # smoothing kernel - leave it untouched
-                               minSize = 0.1,                   # min. relative sprocket size to be expected - used for checks
-                               horizontal = False):             # if you want a simple horizontal alignment as well
-
-   
-        dy,dx,dz = img.shape
-        x0 = int(roi[0]*dx)
-        x1 = int(roi[1]*dx)
-        y0 = int(roi[2]*dy)
-        y1 = int(roi[3]*dy)        
-        print(f" x0 {x0} x1 {x1} y0 {y0} y1 {y1}")
-        sprocketStrip = img[:,x0:x1,:]
-        cv2.imwrite(f"/home/warwickh/sprocketStrip.png", sprocketStrip)
-        sprocketEdges = np.absolute(cv2.Sobel(sprocketStrip,cv2.CV_64F,0,1,ksize=3))
-        histogram     = np.mean(sprocketEdges,axis=(1,2))
-        smoothedHisto = cv2.GaussianBlur(histogram,(1,filterSize),0)
-        maxPeakValue   = smoothedHisto[y0:y1].max()
-        outerThreshold = thresholds[0]*maxPeakValue
-        innerThreshold = thresholds[1]*maxPeakValue
-        outerLow       = y0
-        for y in range(y0,y1):
-            if smoothedHisto[y]>outerThreshold:
-                outerLow = y                 
-                break
-        outerHigh      = y1
-        for y in range(y1,outerLow,-1):
-            if smoothedHisto[y]>outerThreshold:
-                outerHigh = y
-                break
-        if (outerHigh-outerLow)<0.3*dy:
-            searchCenter = (outerHigh+outerLow)//2
-        else:
-            searchCenter = dy//2
-        innerLow = searchCenter
-        for y in range(searchCenter,outerLow,-1):
-            if smoothedHisto[y]>innerThreshold:
-                innerLow = y
-                break
-        innerHigh = searchCenter
-        for y in range(searchCenter,outerHigh):
-            if smoothedHisto[y]>innerThreshold:
-                innerHigh = y
-                break
-        sprocketSize    = innerHigh-innerLow
-        minSprocketSize = int(minSize*dy)
-        print(f"minSprocketSize {minSprocketSize}<sprocketSize {sprocketSize} {minSprocketSize<sprocketSize} and sprocketSize<(outerHigh-outerLow) {sprocketSize<(outerHigh-outerLow)}")
-        if minSprocketSize<sprocketSize and sprocketSize<(outerHigh-outerLow) and sprocketSize<100 :
-            sprocketCenter = (innerHigh+innerLow)//2
-            print(f"Valid sprocket size {sprocketSize}")
-        else:
-            sprocketCenter = dy//2
-            sprocketSize   = 0
-        xShift = 0
-        if horizontal and sprocketSize>0:
-            rx0 = x0
-            rx1 = x0 + 2*(x1-x0)
-            ry = int(0.8*sprocketSize)
-            ry0 = sprocketCenter-ry//2
-            ry1 = sprocketCenter+ry//2
-            horizontalStrip = img[ry0:ry1,rx0:rx1,:]
-            cv2.imwrite(f"/home/warwickh/horizontalStrip.png", horizontalStrip)
-            horizontalEdges = np.absolute(cv2.Sobel(horizontalStrip,cv2.CV_64F,1,0,ksize=3))
-            histoHori       = np.mean(horizontalEdges,axis=(0,2))
-            smoothedHori    = cv2.GaussianBlur(histoHori,(1,5),0)
-            maxPeakValueH   = smoothedHori.max()
-            thresholdHori   = thresholds[1]*maxPeakValueH
-            xShift = 0
-            for x in range((x1-x0)//2,len(smoothedHori)):
-                if smoothedHori[x]>thresholdHori:
-                    xShift = x                 
-                    break
-            print(f"xShift before {xShift}")
-            print(f"Try right edge {x0+xShift} cx half-width {(x1-x0)/2} actual edge minus half width {x0+xShift-((x1-x0)/2)}")
-        print(f"InnerLow {innerLow} InnerHigh {innerHigh} Sprocketcentre {sprocketCenter}")
-        #return (xShift,dy//2-sprocketCenter)
-        cY = dy//2-sprocketCenter
-        cX = x0+xShift-((x1-x0)/2) #calculated centre of hole from left of scan
-        returnVal = True
-        return cX, cY, returnVal
-          
 
     # area size has to be set to identify the sprocket hole
     # if the sprocket hole area is around 8000, then 6000 should be a safe choice
@@ -334,39 +247,28 @@ class Frame:
     # 0: hole found, 1: hole not found, 2: hole to large, 3: no center
     def locateSprocketHole(self, area_size):
         self.imageSmall = cv2.resize(self.image, (640, 480))
-        roi = [0.10,0.16,0.3,0.7]       # region-of-interest - set as small as possible
+        #roi = [0.10,0.16,0.3,0.7]       # region-of-interest - set as small as possible
         thresholds = [0.5,0.2]          # edge thresholds; first one higher, second one lower
         filterSize = 25                 # smoothing kernel - leave it untouched
-        minSize = 0.08
-        horizontal=True
-        img=self.imageSmall
-        dy,dx,dz = img.shape
-        x0 = int(roi[0]*dx)
-        x1 = int(roi[1]*dx)
-        y0 = int(roi[2]*dy)
-        y1 = int(roi[3]*dy)   
-        Frame.holeCrop.x1 = x0
-        Frame.holeCrop.x2 = x1 
-        Frame.holeCrop.y1 = y0
-        Frame.holeCrop.y2 = y1    
-        print(f" x0 {x0} x1 {x1} y0 {y0} y1 {y1}")
-        sprocketStrip = img[:,x0:x1,:]
-        strip = cv2.cvtColor(sprocketStrip, cv2.COLOR_BGR2GRAY)
-        ret, self.imageHoleCrop = cv2.threshold(strip, 220, 255, 0) 
-        cv2.imwrite(f"/home/warwickh/sprocketStrip.png", sprocketStrip)
-        sprocketEdges = np.absolute(cv2.Sobel(sprocketStrip,cv2.CV_64F,0,1,ksize=3))
+        minSprocketSize = 40
+        maxSprocketSize = 100
+        dy,dx,dz = self.imageSmall.shape
+        print(f"Frame.holeCrop.x1 {Frame.holeCrop.x1} Frame.holeCrop.x2 {Frame.holeCrop.x2}")
+        print(f"Frame.holeCrop.y1 {Frame.holeCrop.y1} Frame.holeCrop.y2 {Frame.holeCrop.y2}")
+        self.imageHoleCrop = self.imageSmall[:,Frame.holeCrop.x1:Frame.holeCrop.x2,:]
+        sprocketEdges = np.absolute(cv2.Sobel(self.imageHoleCrop,cv2.CV_64F,0,1,ksize=3))
         histogram     = np.mean(sprocketEdges,axis=(1,2))
         smoothedHisto = cv2.GaussianBlur(histogram,(1,filterSize),0)
-        maxPeakValue   = smoothedHisto[y0:y1].max()
+        maxPeakValue   = smoothedHisto[Frame.holeCrop.y1:Frame.holeCrop.y2].max()
         outerThreshold = thresholds[0]*maxPeakValue
         innerThreshold = thresholds[1]*maxPeakValue
-        outerLow       = y0
-        for y in range(y0,y1):
+        outerLow       = Frame.holeCrop.y1
+        for y in range(Frame.holeCrop.y1,Frame.holeCrop.y2):
             if smoothedHisto[y]>outerThreshold:
                 outerLow = y                 
                 break
-        outerHigh      = y1
-        for y in range(y1,outerLow,-1):
+        outerHigh      = Frame.holeCrop.y2
+        for y in range(Frame.holeCrop.y2,outerLow,-1):
             if smoothedHisto[y]>outerThreshold:
                 outerHigh = y
                 break
@@ -385,24 +287,30 @@ class Frame:
                 innerHigh = y
                 break
         sprocketSize    = innerHigh-innerLow
-        minSprocketSize = int(minSize*dy)
-        print(f"minSprocketSize {minSprocketSize}<sprocketSize {sprocketSize} {minSprocketSize<sprocketSize} and sprocketSize<(outerHigh-outerLow) {sprocketSize<(outerHigh-outerLow)}")
-        if minSprocketSize<sprocketSize and sprocketSize<(outerHigh-outerLow) :
+        #minSprocketSize = int(minSize)
+        print(f"minSprocketSize {minSprocketSize}<sprocketSize {sprocketSize} {minSprocketSize<sprocketSize}")
+        print(f"maxSprocketSize {maxSprocketSize}>sprocketSize {sprocketSize} {maxSprocketSize<sprocketSize}")
+        print(f"and sprocketSize<(outerHigh-outerLow) {sprocketSize<(outerHigh-outerLow)}")
+        if minSprocketSize<sprocketSize and sprocketSize<(outerHigh-outerLow) and sprocketSize<maxSprocketSize:
             sprocketCenter = (innerHigh+innerLow)//2
             print(f"Valid sprocket size {sprocketSize}")
             locateHoleResult = 0
+        elif sprocketSize>maxSprocketSize:
+            sprocketCenter = (innerHigh+innerLow)//2
+            print(f"Invalid sprocket size too big {sprocketSize}")
+            locateHoleResult = 2
         else:
             sprocketCenter = dy//2
             sprocketSize   = 0
-            locateHoleResult = 4
+            locateHoleResult = 1
         xShift = 0
-        if horizontal and sprocketSize>0:
-            rx0 = x0
-            rx1 = x0 + 2*(x1-x0)
+        if sprocketSize>0:
+            rx1 = Frame.holeCrop.x1
+            rx2 = Frame.holeCrop.x1 + 2*(Frame.holeCrop.x2-Frame.holeCrop.x1)
             ry = int(0.8*sprocketSize)
-            ry0 = sprocketCenter-ry//2
-            ry1 = sprocketCenter+ry//2
-            horizontalStrip = img[ry0:ry1,rx0:rx1,:]
+            ry1 = sprocketCenter-ry//2
+            ry2 = sprocketCenter+ry//2
+            horizontalStrip = self.imageSmall[ry1:ry2,rx1:rx2,:]
             cv2.imwrite(f"/home/warwickh/horizontalStrip.png", horizontalStrip)
             horizontalEdges = np.absolute(cv2.Sobel(horizontalStrip,cv2.CV_64F,1,0,ksize=3))
             histoHori       = np.mean(horizontalEdges,axis=(0,2))
@@ -410,59 +318,30 @@ class Frame:
             maxPeakValueH   = smoothedHori.max()
             thresholdHori   = thresholds[1]*maxPeakValueH
             xShift = 0
-            for x in range((x1-x0)//2,len(smoothedHori)):
+            for x in range((Frame.holeCrop.x2-Frame.holeCrop.x1)//2,len(smoothedHori)):
                 if smoothedHori[x]>thresholdHori:
                     xShift = x                 
                     break
             print(f"xShift before {xShift}")
-            print(f"Try right edge {x0+xShift} cx half-width {(x1-x0)/2} actual edge minus half width {x0+xShift-((x1-x0)/2)}")
+            print(f"Try right edge {Frame.holeCrop.x1+xShift} cx half-width {(Frame.holeCrop.x2-Frame.holeCrop.x1)/2}")
+            print(f"actual edge minus half width {Frame.holeCrop.x1+xShift-((Frame.holeCrop.x2-Frame.holeCrop.x1)/2)}")
         print(f"InnerLow {innerLow} InnerHigh {innerHigh} Sprocketcentre {sprocketCenter}")
         #return (xShift,dy//2-sprocketCenter)
         #cY = dy//2-sprocketCenter
-        cX = int(x0+xShift-((x1-x0)/2)) #calculated centre of hole from left of scan
+        cX = int(Frame.holeCrop.x1+xShift-((Frame.holeCrop.x2-Frame.holeCrop.x1)/2)) #calculated centre of hole from left of scan
         oldcX = self.cX
         oldcY = self.cY  
         self.cX = cX-Frame.holeCrop.x1
         self.cY = sprocketCenter
         #locateHoleResult = 0
 
-        """
-        self.area = area_size
-        for l in range(lenContours):
-            cnt = contours[l]
-            area = cv2.contourArea(cnt)
-            if dbg >= 1 :
-                print((l, area))
-            if area > area_size:
-                locateHoleResult = 0 # hole found
-                self.area = area
-                if area > 3*area_size:
-                    locateHoleResult = 2 # very large contour found == no film
-                # print("found")
-                # print("area=", area)
-                break
-        if locateHoleResult == 0:      
-            M = cv2.moments(cnt)
-            # print(M)
-            try:
-                self.cX = int(M["m10"] / M["m00"])
-                self.cY = int(M["m01"] / M["m00"])
-                #holeDist = 225
-                #if cY > holeDist : # distance between holes
-                #    print("cY=", cY)
-                #    locateHoleResult = 4 # 2. hole found
-                #    cY = cY - holeDist
-            except ZeroDivisionError:
-                if dbg >= 2: print("no center")
-                locateHoleResult = 3 # no center
-                #self.cX = oldcX
-                #self.cY = oldcY # midy
-        else :
-            #self.cX = oldcX
-            #self.cY = oldcY  
-            pass
-        """
-                        
+        plt.plot(smoothedHisto)
+        plt.axvline(sprocketCenter, color='blue', linewidth=1)
+        plt.xlim([0, dy])
+        #plt.show()
+        plt.savefig("/home/warwickh/my_cv2hist.png")
+        print(f"InnerLow {innerLow} InnerHigh {innerHigh} Sprocketcentre {sprocketCenter}")
+
         print("cY=", self.cY, "oldcY=", oldcY, "locateHoleResult=", locateHoleResult)
  
         p1 = (0, self.cY) 
@@ -481,7 +360,9 @@ class Frame:
         p1 = (0, self.midy+1)
         p2 = (Frame.holeCrop.x2-Frame.holeCrop.x1, self.midy+1)
         cv2.line(self.imageHoleCrop, p1, p2, (255, 255, 255), 1) # white line
-
+        
+        cv2.imwrite(f"/home/warwickh/sprocketStrip.png", self.imageHoleCrop)
+            
         self.locateHoleResult = locateHoleResult
         return locateHoleResult
             
