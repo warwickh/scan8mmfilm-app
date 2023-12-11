@@ -334,7 +334,7 @@ class Frame:
         self.cX = cX-Frame.holeCrop.x1
         self.cY = sprocketCenter
         #locateHoleResult = 0
-
+        plt.clf()
         plt.plot(smoothedHisto)
         plt.axvline(sprocketCenter, color='blue', linewidth=1)
         plt.xlim([0, dy])

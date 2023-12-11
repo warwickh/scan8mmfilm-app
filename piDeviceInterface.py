@@ -4,6 +4,7 @@
 # Version 1.0.0
 
 from time import sleep
+from threading import Timer
 import cv2
 
 try:
@@ -66,26 +67,48 @@ def initGpio() :
     pwm = GPIO.PWM(6, 40)  # set PWM channel, hz
     print("GPIO setup")
     
-def spoolStart():
+#def spoolStart():
+#    pint = GPIO.input(photoint)
+#    if pint:
+#        pwm.start(10)
+#    else:
+#        pwm.ChangeDutyCycle(0)
+
+def spoolFwd(time=1):
+    print("Spool forward")
+    spoolTimer = Timer(time, spoolStop)
+    spoolTimer.start()
     pint = GPIO.input(photoint)
     if pint:
+        GPIO.output(pin_forward, GPIO.HIGH)
+        GPIO.output(pin_backward, GPIO.LOW)
         pwm.start(10)
     else:
         pwm.ChangeDutyCycle(0)
 
+def spoolBack(time=1):
+    print("Spool back")
+    spoolTimer = Timer(time, spoolStop)
+    spoolTimer.start()
+    GPIO.output(pin_forward, GPIO.LOW)
+    GPIO.output(pin_backward, GPIO.HIGH)
+    pwm.start(10)
+    
 def spoolStop():
+    print("Spool stop")
     pwm.ChangeDutyCycle(0)
     GPIO.output(pin_forward, GPIO.LOW)
     GPIO.output(pin_backward, GPIO.LOW)
     #GPIO.output(STEPON, GPIO.LOW)
+    pwm.ChangeDutyCycle(0)
 
 def rewind():
     pwm.ChangeDutyCycle(50)
     GPIO.output(pin_forward, GPIO.HIGH)
     GPIO.output(pin_backward, GPIO.LOW)
-    
 
 def stepCw(steps):
+    #spoolStart()
     for x in range(steps):
         GPIO.output(DIR, CW)
         GPIO.output(STEP, GPIO.HIGH)
@@ -95,6 +118,7 @@ def stepCw(steps):
 
 
 def stepCcw(steps):
+    #spoolBack()
     for x in range(steps):
         GPIO.output(DIR, CCW)
         GPIO.output(STEP, GPIO.HIGH)
