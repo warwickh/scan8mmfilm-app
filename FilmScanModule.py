@@ -206,7 +206,7 @@ class Frame:
         return self.convert_cv_qt(self.imageHoleCrop)
 
     def calcCrop(self):
-        p#self.locateHoleResult = self.locateSprocketHoleNew(Frame.holeMinArea)
+        #self.locateHoleResult = self.locateSprocketHoleNew(Frame.holeMinArea)
         self.locateHoleResult = self.locateSprocketHoleNew()
         
         x = int((self.cX + Frame.holeCrop.x1) * Frame.ScaleFactor)+Frame.frameCrop.x1
@@ -302,8 +302,8 @@ class Frame:
         p2 = (Frame.holeCrop.x2-Frame.holeCrop.x1, self.cY)
         # print(p1, p2)
         cv2.line(self.imageHoleCrop, p1, p2, (0, 255, 0), 3)
-        p1 = (self.cX, 0) 
-        p2 = (self.cX, Frame.holeCrop.y2-Frame.holeCrop.y1) 
+        p1 = (self.cX, self.cY-10) 
+        p2 = (self.cX, self.cY+10)#Frame.holeCrop.y2-Frame.holeCrop.y1) 
         # print(p1, p2)
         cv2.line(self.imageHoleCrop, p1, p2, (0, 255, 0), 3)
         
