@@ -206,7 +206,8 @@ class Frame:
         return self.convert_cv_qt(self.imageHoleCrop)
 
     def calcCrop(self):
-        self.locateHoleResult = self.locateSprocketHole(Frame.holeMinArea)
+        p#self.locateHoleResult = self.locateSprocketHoleNew(Frame.holeMinArea)
+        self.locateHoleResult = self.locateSprocketHoleNew()
         
         x = int((self.cX + Frame.holeCrop.x1) * Frame.ScaleFactor)+Frame.frameCrop.x1
         y = int((self.cY + Frame.holeCrop.y1) * Frame.ScaleFactor)+Frame.frameCrop.y1 
@@ -247,11 +248,86 @@ class Frame:
     # 0: hole found, 1: hole not found, 2: hole to large, 3: no center
     def locateSprocketHole(self, area_size):
         self.imageSmall = cv2.resize(self.image, (640, 480))
-        #roi = [0.10,0.16,0.3,0.7]       # region-of-interest - set as small as possible
+        # the image crop with the sprocket hole 
+        img = self.imageSmall[Frame.holeCrop.y1:Frame.holeCrop.y2, Frame.holeCrop.x1:Frame.holeCrop.x2]
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        self.whiteTreshold = self.getWhiteThreshold(self.imageSmall)
+        ret, self.imageHoleCrop = cv2.threshold(img, self.whiteTreshold, 255, 0) 
+        contours, hierarchy = cv2.findContours(self.imageHoleCrop, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        # RETR_LIST: retrieves all of the contours without establishing any hierarchical relationships.
+        # CHAIN_APPROX_SIMPLE: compresses horizontal, vertical, and diagonal segments and leaves only 
+        # their end points. For example, an up-right rectangular contour is encoded with 4 points.
+        
+        lenContours = len(contours)
+        locateHoleResult = 1 
+        oldcX = self.cX
+        oldcY = self.cY
+        self.area = area_size
+        for l in range(lenContours):
+            cnt = contours[l]
+            area = cv2.contourArea(cnt)
+            if dbg >= 1 :
+                print((l, area))
+            if area > area_size:
+                locateHoleResult = 0 # hole found
+                self.area = area
+                if area > 3*area_size:
+                    locateHoleResult = 2 # very large contour found == no film
+                # print("found")
+                # print("area=", area)
+                break
+        if locateHoleResult == 0:      
+            M = cv2.moments(cnt)
+            # print(M)
+            try:
+                self.cX = int(M["m10"] / M["m00"])
+                self.cY = int(M["m01"] / M["m00"])
+                #holeDist = 225
+                #if cY > holeDist : # distance between holes
+                #    print("cY=", cY)
+                #    locateHoleResult = 4 # 2. hole found
+                #    cY = cY - holeDist
+            except ZeroDivisionError:
+                if dbg >= 2: print("no center")
+                locateHoleResult = 3 # no center
+                self.cX = oldcX
+                self.cY = oldcY # midy
+        else :
+            self.cX = oldcX
+            self.cY = oldcY  
+                  
+        if dbg >= 2: print("cY=", self.cY, "oldcY=", oldcY, "locateHoleResult=", locateHoleResult)
+ 
+        p1 = (0, self.cY) 
+        p2 = (Frame.holeCrop.x2-Frame.holeCrop.x1, self.cY)
+        # print(p1, p2)
+        cv2.line(self.imageHoleCrop, p1, p2, (0, 255, 0), 3)
+        p1 = (self.cX, 0) 
+        p2 = (self.cX, Frame.holeCrop.y2-Frame.holeCrop.y1) 
+        # print(p1, p2)
+        cv2.line(self.imageHoleCrop, p1, p2, (0, 255, 0), 3)
+        
+        # show target midy
+        p1 = (0, self.midy) 
+        p2 = (Frame.holeCrop.x2-Frame.holeCrop.x1, self.midy)
+        cv2.line(self.imageHoleCrop, p1, p2, (0, 255, 0), 1)  # black line
+        p1 = (0, self.midy+1)
+        p2 = (Frame.holeCrop.x2-Frame.holeCrop.x1, self.midy+1)
+        cv2.line(self.imageHoleCrop, p1, p2, (255, 255, 255), 1) # white line
+
+        self.locateHoleResult = locateHoleResult
+        return locateHoleResult
+
+    # Based on https://github.com/cpixip/sprocket_detection
+    # initial testing had issues with selecting point between 2 holes TODO
+    # Return values:
+    # 0: hole found, 1: hole not found, 2: hole to large, 3: no center
+    def locateSprocketHoleNew(self):
+        self.imageSmall = cv2.resize(self.image, (640, 480))
         thresholds = [0.5,0.2]          # edge thresholds; first one higher, second one lower
         filterSize = 25                 # smoothing kernel - leave it untouched
         minSprocketSize = 40
-        maxSprocketSize = 100
+        maxSprocketSize = 50 
         dy,dx,dz = self.imageSmall.shape
         print(f"Frame.holeCrop.x1 {Frame.holeCrop.x1} Frame.holeCrop.x2 {Frame.holeCrop.x2}")
         print(f"Frame.holeCrop.y1 {Frame.holeCrop.y1} Frame.holeCrop.y2 {Frame.holeCrop.y2}")
@@ -292,15 +368,15 @@ class Frame:
         print(f"maxSprocketSize {maxSprocketSize}>sprocketSize {sprocketSize} {maxSprocketSize<sprocketSize}")
         print(f"and sprocketSize<(outerHigh-outerLow) {sprocketSize<(outerHigh-outerLow)}")
         if minSprocketSize<sprocketSize and sprocketSize<(outerHigh-outerLow) and sprocketSize<maxSprocketSize:
-            sprocketCenter = (innerHigh+innerLow)//2
+            cY = (innerHigh+innerLow)//2
             print(f"Valid sprocket size {sprocketSize}")
             locateHoleResult = 0
         elif sprocketSize>maxSprocketSize:
-            sprocketCenter = (innerHigh+innerLow)//2
+            cY = (innerHigh+innerLow)//2
             print(f"Invalid sprocket size too big {sprocketSize}")
             locateHoleResult = 2
         else:
-            sprocketCenter = dy//2
+            cY = dy//2
             sprocketSize   = 0
             locateHoleResult = 1
         xShift = 0
@@ -308,8 +384,8 @@ class Frame:
             rx1 = Frame.holeCrop.x1
             rx2 = Frame.holeCrop.x1 + 2*(Frame.holeCrop.x2-Frame.holeCrop.x1)
             ry = int(0.8*sprocketSize)
-            ry1 = sprocketCenter-ry//2
-            ry2 = sprocketCenter+ry//2
+            ry1 = cY-ry//2
+            ry2 = cY+ry//2
             horizontalStrip = self.imageSmall[ry1:ry2,rx1:rx2,:]
             cv2.imwrite(f"/home/warwickh/horizontalStrip.png", horizontalStrip)
             horizontalEdges = np.absolute(cv2.Sobel(horizontalStrip,cv2.CV_64F,1,0,ksize=3))
@@ -325,22 +401,25 @@ class Frame:
             print(f"xShift before {xShift}")
             print(f"Try right edge {Frame.holeCrop.x1+xShift} cx half-width {(Frame.holeCrop.x2-Frame.holeCrop.x1)/2}")
             print(f"actual edge minus half width {Frame.holeCrop.x1+xShift-((Frame.holeCrop.x2-Frame.holeCrop.x1)/2)}")
-        print(f"InnerLow {innerLow} InnerHigh {innerHigh} Sprocketcentre {sprocketCenter}")
-        #return (xShift,dy//2-sprocketCenter)
-        #cY = dy//2-sprocketCenter
+        print(f"InnerLow {innerLow} InnerHigh {innerHigh} Sprocketcentre {cY}")
+        #return (xShift,dy//2-cY)
+        #cY = dy//2-cY
         cX = int(Frame.holeCrop.x1+xShift-((Frame.holeCrop.x2-Frame.holeCrop.x1)/2)) #calculated centre of hole from left of scan
         oldcX = self.cX
         oldcY = self.cY  
         self.cX = cX-Frame.holeCrop.x1
-        self.cY = sprocketCenter
+        self.cY = cY
         #locateHoleResult = 0
-        plt.clf()
         plt.plot(smoothedHisto)
-        plt.axvline(sprocketCenter, color='blue', linewidth=1)
+        plt.axvline(cY, color='blue', linewidth=1)
         plt.xlim([0, dy])
         #plt.show()
         plt.savefig("/home/warwickh/my_cv2hist.png")
-        print(f"InnerLow {innerLow} InnerHigh {innerHigh} Sprocketcentre {sprocketCenter}")
+        plt.xlim(Frame.holeCrop.y1,Frame.holeCrop.y2)
+        #plt.show()
+        plt.savefig("/home/warwickh/my_cv2hist_lim.png")
+        plt.clf()
+        print(f"InnerLow {innerLow} InnerHigh {innerHigh} cY {cY}")
 
         print("cY=", self.cY, "oldcY=", oldcY, "locateHoleResult=", locateHoleResult)
  
