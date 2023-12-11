@@ -302,12 +302,8 @@ class Frame:
         p2 = (Frame.holeCrop.x2-Frame.holeCrop.x1, self.cY)
         # print(p1, p2)
         cv2.line(self.imageHoleCrop, p1, p2, (0, 255, 0), 3)
-        #p1 = (self.cX, 0) 
-        #p2 = (self.cX, Frame.holeCrop.y2-Frame.holeCrop.y1) 
-        
-        p1 = (self.cX, Frame.holeCrop.y1) 
-        p2 = (self.cX, Frame.holeCrop.y2) 
-        
+        p1 = (self.cX, 0) 
+        p2 = (self.cX, Frame.holeCrop.y2-Frame.holeCrop.y1) 
         # print(p1, p2)
         cv2.line(self.imageHoleCrop, p1, p2, (0, 255, 0), 3)
         
@@ -431,8 +427,13 @@ class Frame:
         p2 = (Frame.holeCrop.x2-Frame.holeCrop.x1, self.cY)
         # print(p1, p2)
         cv2.line(self.imageHoleCrop, p1, p2, (0, 255, 0), 3)
-        p1 = (self.cX, 0) 
-        p2 = (self.cX, Frame.holeCrop.y2-Frame.holeCrop.y1) 
+        
+        #p1 = (self.cX, 0) 
+        #p2 = (self.cX, Frame.holeCrop.y2-Frame.holeCrop.y1) 
+        
+        p1 = (self.cX, Frame.holeCrop.y1) 
+        p2 = (self.cX, Frame.holeCrop.y2) 
+        
         # print(p1, p2)
         cv2.line(self.imageHoleCrop, p1, p2, (0, 255, 0), 3)
         
