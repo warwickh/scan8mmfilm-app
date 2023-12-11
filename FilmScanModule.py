@@ -426,7 +426,7 @@ class Frame:
         p1 = (0, self.cY) 
         p2 = (Frame.holeCrop.x2-Frame.holeCrop.x1, self.cY)
         # print(p1, p2)
-        cv2.line(self.imageHoleCrop, p1, p2, (0, 255, 0), 3)
+        cv2.line(self.imageHoleCrop, p1, p2, (0, 0, 255), 3)
         
         #p1 = (self.cX, 0) 
         #p2 = (self.cX, Frame.holeCrop.y2-Frame.holeCrop.y1) 
@@ -435,7 +435,7 @@ class Frame:
         p2 = (self.cX, Frame.holeCrop.y2) 
         
         # print(p1, p2)
-        cv2.line(self.imageHoleCrop, p1, p2, (0, 255, 0), 3)
+        cv2.line(self.imageHoleCrop, p1, p2, (0, 0, 255), 3)
         
         # show target midy
         p1 = (0, self.midy) 
