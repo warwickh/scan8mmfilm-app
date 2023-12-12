@@ -325,10 +325,10 @@ class Frame:
     def locateSprocketHoleNew(self):
         #roi = [0.10,0.16,0.3,0.7]       # region-of-interest - set as small as possible
         self.imageSmall = cv2.resize(self.image, (640, 480))
-        thresholds = [0.5,0.2]          # edge thresholds; first one higher, second one lower
+        thresholds = [0.5,0.3]          # edge thresholds; first one higher, second one lower
         filterSize = 25                 # smoothing kernel - leave it untouched
         minSprocketSize = 40
-        maxSprocketSize = 50 
+        maxSprocketSize = 55 
         dy,dx,dz = self.imageSmall.shape
         print(f"Frame.holeCrop.x1 {Frame.holeCrop.x1} Frame.holeCrop.x2 {Frame.holeCrop.x2}")
         print(f"Frame.holeCrop.y1 {Frame.holeCrop.y1} Frame.holeCrop.y2 {Frame.holeCrop.y2}")
@@ -340,6 +340,23 @@ class Frame:
         outerThreshold = thresholds[0]*maxPeakValue
         innerThreshold = thresholds[1]*maxPeakValue
         outerLow       = Frame.holeCrop.y1
+        
+        #experimental try to avoid falling between frames
+        peaks = []
+        s8_template = [60,160]
+        for y in range(0,479):
+            if smoothedHisto[y]<outerThreshold and smoothedHisto[y+1]>outerThreshold:
+                peaks.append(y)
+        print(peaks)
+        for i in range(0,len(peaks)-2):
+            print(f"{peaks[i+1]-peaks[i]} - {s8_template[0]} = {peaks[i+1]-peaks[i]-s8_template[0]}")
+            print(f"and {peaks[i+2]-peaks[i+1]} -{s8_template[1]} = {peaks[i+2]-peaks[i+1]-s8_template[1]} ")
+            if(abs(peaks[i+1]-peaks[i]-s8_template[0])<10) and (abs(peaks[i+2]-peaks[i+1]-s8_template[1])<10):
+                print(f"Found hole starting at {peaks[i]} which is {self.midy-peaks[i]} from the centre")
+                if self.midy-peaks[i]<s8_template[1]:
+                    Frame.holeCrop.y1=peaks[i]-s8_template[0]
+                    Frame.holeCrop.y2=peaks[i]+s8_template[1]
+                    break
         for y in range(Frame.holeCrop.y1,Frame.holeCrop.y2):
             if smoothedHisto[y]>outerThreshold:
                 outerLow = y                 
@@ -352,7 +369,9 @@ class Frame:
         if (outerHigh-outerLow)<0.3*dy:
             searchCenter = (outerHigh+outerLow)//2
         else:
-            searchCenter = dy//2
+            #searchCenter = dy//2
+            searchCenter = int(outerLow + (0.5*minSprocketSize)) #give priority to top frame. Try to find internal location
+            print(f"Between 2 frames, using top. Searching from {searchCenter}")
         innerLow = searchCenter
         for y in range(searchCenter,outerLow,-1):
             if smoothedHisto[y]>innerThreshold:

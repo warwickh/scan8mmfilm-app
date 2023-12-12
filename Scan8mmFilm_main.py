@@ -621,7 +621,7 @@ class QThreadScan(QtCore.QThread):
         self.cmd = 1 # run 
         self.midy = Frame.midy
         self.tolerance = 5
-        self.pixelsPerStep = 0.8
+        self.pixelsPerStep = 4
 
         self.frameNo = Film.getFileCount(Film.scanFolder)
         
@@ -653,7 +653,7 @@ class QThreadScan(QtCore.QThread):
                 capture_config = picam2.create_still_configuration(main={"format": "RGB888","size": (Camera.ViewWidth, Camera.ViewHeight)},transform=Transform(vflip=True,hflip=True))
                 image = picam2.switch_mode_and_capture_array(capture_config, "main") #, signal_function=self.qpicamera2.signal_done)
                 self.frame = Frame(image=image)
-                locateHoleResult = self.frame.locateSprocketHole(Frame.holeMinArea)
+                locateHoleResult = self.frame.locateSprocketHoleNew()#Frame.holeMinArea)
                 
                 print("cY",self.frame.cY ,"oldY", oldY, "locateHoleResult", locateHoleResult,"cmd",self.cmd,"area",self.frame.area)
                 
