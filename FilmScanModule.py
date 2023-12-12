@@ -143,7 +143,7 @@ class Frame:
     # N.B. The midy value is used to position the frame near the center of the camera view during scanning
     midx = 64   # always overwitten 
     midy = 120 
-    
+
     # Needs to be adjusted to fit the a film frame as seen in the camera view image
     # x1,y1 are relative to the top sprocket hole center
     frameCrop = Rect("frame_crop", 146, 28, 146+814, 28+565)
@@ -323,6 +323,7 @@ class Frame:
     # Return values:
     # 0: hole found, 1: hole not found, 2: hole to large, 3: no center
     def locateSprocketHoleNew(self):
+        #roi = [0.10,0.16,0.3,0.7]       # region-of-interest - set as small as possible
         self.imageSmall = cv2.resize(self.image, (640, 480))
         thresholds = [0.5,0.2]          # edge thresholds; first one higher, second one lower
         filterSize = 25                 # smoothing kernel - leave it untouched
@@ -412,6 +413,13 @@ class Frame:
         #locateHoleResult = 0
         plt.plot(smoothedHisto)
         plt.axvline(cY, color='blue', linewidth=1)
+        plt.axvline(searchCenter, color='orange', linewidth=1)
+        plt.axvline(innerHigh, color='green', linewidth=1)
+        plt.axvline(innerLow, color='red', linewidth=1)
+        plt.axvline(outerHigh, color='purple', linewidth=1)
+        plt.axvline(outerLow, color='gray', linewidth=1)
+        plt.axvline(outerLow, color='cyan', linewidth=1)
+        plt.axvline(outerLow, color='olive', linewidth=1)
         plt.xlim([0, dy])
         #plt.show()
         plt.savefig("/home/warwickh/my_cv2hist.png")
