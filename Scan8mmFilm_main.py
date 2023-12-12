@@ -675,8 +675,8 @@ class QThreadScan(QtCore.QThread):
                            
                 
                 
-                #tolstep = int(abs(self.frame.cY-self.midy)/self.pixelsPerStep)
-                tolstep = 6
+                tolstep = int(abs(self.frame.cY-self.midy)/self.pixelsPerStep)
+                #tolstep = 6
                 print(f"{self.frame.cY}-----------------------------------------------")
                 if self.frame.cY > self.midy + self.tolerance:
                     #self.motorStart()
