@@ -377,6 +377,7 @@ class Frame:
             print(f"Invalid sprocket size too big {sprocketSize}")
             locateHoleResult = 2
         else:
+            print(f"Why am I here with sprocketSize {sprocketSize}")
             cY = dy//2
             sprocketSize   = 0
             locateHoleResult = 1
