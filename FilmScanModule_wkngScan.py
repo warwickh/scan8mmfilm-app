@@ -119,14 +119,14 @@ class Rect:
         return self.y2 - self.y1
     
     def adjX(self, adj):
-        #if self.x1 + adj >= 0 :
-        self.x1 = self.x1 + adj
-        self.x2 = self.x2 + adj
+        if self.x1 + adj >= 0 :
+            self.x1 = self.x1 + adj
+            self.x2 = self.x2 + adj
 
     def adjY(self, adj):
-        #if self.y1 + adj >= 0 :
-        self.y1 = self.y1 + adj
-        self.y2 = self.y2 + adj
+        if self.y1 + adj >= 0 :
+            self.y1 = self.y1 + adj
+            self.y2 = self.y2 + adj
         
     def adjXSize(self, adj):
         if self.x2 + adj > self.x1 :
@@ -208,17 +208,11 @@ class Frame:
     def calcCrop(self):
         #self.locateHoleResult = self.locateSprocketHoleNew(Frame.holeMinArea)
         self.locateHoleResult = self.locateSprocketHoleNew()
-        print(f"Calc crop self.cY {self.cY} + Frame.holeCrop.y1 {Frame.holeCrop.y1} = self.cY + Frame.holeCrop.y1 {self.cY + Frame.holeCrop.y1}")
-        print(f"Frame.ScaleFactor {Frame.ScaleFactor}")
-        print(f"Frame.frameCrop.y1 {Frame.frameCrop.y1}")
-        print(f"int((self.cY + Frame.holeCrop.y1) * Frame.ScaleFactor)+Frame.frameCrop.y1 {int((self.cY + Frame.holeCrop.y1) * Frame.ScaleFactor)+Frame.frameCrop.y1}")
-        #x = int((self.cX + Frame.holeCrop.x1) * Frame.ScaleFactor)+Frame.frameCrop.x1
-        #y = int((self.cY + Frame.holeCrop.y1) * Frame.ScaleFactor)+Frame.frameCrop.y1 
-        x = int(self.cX + (Frame.frameCrop.x1 * Frame.ScaleFactor))
-        y = int(self.cY + (Frame.frameCrop.y1 * Frame.ScaleFactor)) 
+        
+        x = int((self.cX + Frame.holeCrop.x1) * Frame.ScaleFactor)+Frame.frameCrop.x1
+        y = int((self.cY + Frame.holeCrop.y1) * Frame.ScaleFactor)+Frame.frameCrop.y1 
         self.p1 = (x, y)
         self.p2 = (x+Frame.frameCrop.getXSize(), y+Frame.frameCrop.getYSize())
-        print(f"crop self.p1 {self.p1} self.p2 {self.p2}")
         
     def getCropOutline(self, dest=None):
         self.calcCrop()
@@ -330,87 +324,48 @@ class Frame:
     # 0: hole found, 1: hole not found, 2: hole to large, 3: no center
     def locateSprocketHoleNew(self):
         #roi = [0.10,0.16,0.3,0.7]       # region-of-interest - set as small as possible
-        #self.imageSmall = cv2.resize(self.image, (640, 480))
-        #self.imageSmall = self.image
-        print(f"locateSprocketHoleNew {self.image.shape}")
+        self.imageSmall = cv2.resize(self.image, (640, 480))
         thresholds = [0.5,0.3]          # edge thresholds; first one higher, second one lower
         filterSize = 25                 # smoothing kernel - leave it untouched
-        print(f"Check Frame.holeCrop.y1 {Frame.holeCrop.y1} Frame.holeCrop.y2 {Frame.holeCrop.y2}------------")
-        dy,dx,dz = self.image.shape
-        Frame.ScaleFactor = dx/640.0
-        midy = self.midy*Frame.ScaleFactor
-        print(f"Scalefactor {Frame.ScaleFactor}")
-        minSprocketSize = 40*Frame.ScaleFactor
-        maxSprocketSize = 58*Frame.ScaleFactor
-        
-        Frame.holeCrop.y1 = 0
-        Frame.holeCrop.y2 = dy-1
-        y1 = Frame.holeCrop.y1
-        y2 = Frame.holeCrop.y2
-        x1 = int(Frame.holeCrop.x1*Frame.ScaleFactor)
-        x2 = int(Frame.holeCrop.x2*Frame.ScaleFactor)
-        print(f"x1 {x1} x2 {x2}")
-        print(f"y1 {y1} y2 {y2}")
-        self.imageHoleCrop = self.image[:,x1:x2,:]
+        minSprocketSize = 34
+        maxSprocketSize = 55 
+        dy,dx,dz = self.imageSmall.shape
+        print(f"Frame.holeCrop.x1 {Frame.holeCrop.x1} Frame.holeCrop.x2 {Frame.holeCrop.x2}")
+        print(f"Frame.holeCrop.y1 {Frame.holeCrop.y1} Frame.holeCrop.y2 {Frame.holeCrop.y2}")
+        self.imageHoleCrop = self.imageSmall[:,Frame.holeCrop.x1:Frame.holeCrop.x2,:]
         sprocketEdges = np.absolute(cv2.Sobel(self.imageHoleCrop,cv2.CV_64F,0,1,ksize=3))
         histogram     = np.mean(sprocketEdges,axis=(1,2))
         smoothedHisto = cv2.GaussianBlur(histogram,(1,filterSize),0)
-        maxPeakValue   = smoothedHisto[y1:y2].max()
+        maxPeakValue   = smoothedHisto[Frame.holeCrop.y1:Frame.holeCrop.y2].max()
         outerThreshold = thresholds[0]*maxPeakValue
         innerThreshold = thresholds[1]*maxPeakValue
-        outerLow       = y1
+        outerLow       = Frame.holeCrop.y1
         
         #experimental try to avoid falling between frames
         peaks = []
-        gap_thresh = 10*Frame.ScaleFactor
-        print(f"Gap threshold {gap_thresh}")
-        s8_template = [60,155]
-        for y in range(y1,y2):
+        s8_template = [60,160]
+        for y in range(0,479):
             if smoothedHisto[y]<outerThreshold and smoothedHisto[y+1]>outerThreshold:
                 peaks.append(y)
         print(peaks)
-        print(f"midy {midy}")
-        frameLocated=False
         for i in range(0,len(peaks)-2):
-            #try forwards
-            print(f"{peaks[i+1]-peaks[i]} - {s8_template[0]*Frame.ScaleFactor} = {peaks[i+1]-peaks[i]-(s8_template[0]**Frame.ScaleFactor):.2f}")
+            print(f"{peaks[i+1]-peaks[i]} - {s8_template[0]} = {peaks[i+1]-peaks[i]-s8_template[0]}")
             print(f"and {peaks[i+2]-peaks[i+1]} -{s8_template[1]} = {peaks[i+2]-peaks[i+1]-s8_template[1]} ")
-            if(abs(peaks[i+1]-peaks[i]-(s8_template[0]*Frame.ScaleFactor))<gap_thresh) and (abs(peaks[i+2]-peaks[i+1]-(s8_template[1]*Frame.ScaleFactor))<gap_thresh):
-                print(f"Found hole starting at {peaks[i]} which is {(midy-peaks[i])/dy:.2f} from the centre")
-                print(f"Check dist from centre {abs((midy-peaks[i])/dy):.2f}")
-                if abs((midy-peaks[i])/dy)<0.3:
-                    y1=int(peaks[i]-(s8_template[0]*Frame.ScaleFactor))
-                    y2=int(peaks[i]+(s8_template[1]*Frame.ScaleFactor))
-                    print(f"New y1 {y1} new y2 {y2}")
-                    frameLocated = True
+            if(abs(peaks[i+1]-peaks[i]-s8_template[0])<10) and (abs(peaks[i+2]-peaks[i+1]-s8_template[1])<10):
+                print(f"Found hole starting at {peaks[i]} which is {self.midy-peaks[i]} from the centre")
+                if self.midy-peaks[i]<s8_template[1]:
+                    Frame.holeCrop.y1=peaks[i]-s8_template[0]
+                    Frame.holeCrop.y2=peaks[i]+s8_template[1]
                     break
-        if not frameLocated:
-            for i in range(0,len(peaks)-2):
-                #try backwards
-                print(f"{peaks[i+1]-peaks[i]} - {s8_template[1]*Frame.ScaleFactor} = {peaks[i+1]-peaks[i]-(s8_template[1]**Frame.ScaleFactor):.2f}")
-                print(f"and {peaks[i+2]-peaks[i+1]} -{s8_template[0]} = {peaks[i+2]-peaks[i+1]-s8_template[0]} ")
-                if(abs(peaks[i+1]-peaks[i]-(s8_template[1]*Frame.ScaleFactor))<gap_thresh) and (abs(peaks[i+2]-peaks[i+1]-(s8_template[0]*Frame.ScaleFactor))<gap_thresh):
-                    print(f"Found hole backwards starting at {peaks[i+1]} which is {(midy-peaks[i+1])/dy:.2f} from the centre")
-                    print(f"Check dist from centre {abs((midy-peaks[i+1])/dy):.2f}")
-                    if abs((midy-peaks[i+1])/dy)<0.3:
-                        y1=int(peaks[i+1]-(s8_template[0]*Frame.ScaleFactor))
-                        y2=int(peaks[i+1]+(s8_template[1]*Frame.ScaleFactor))
-                        print(f"New y1 {y1} new y2 {y2}")
-                        break
-
-
-
-
-        for y in range(y1,y2):
+        for y in range(Frame.holeCrop.y1,Frame.holeCrop.y2):
             if smoothedHisto[y]>outerThreshold:
                 outerLow = y                 
                 break
-        outerHigh      = y2
-        for y in range(y2,outerLow,-1):
+        outerHigh      = Frame.holeCrop.y2
+        for y in range(Frame.holeCrop.y2,outerLow,-1):
             if smoothedHisto[y]>outerThreshold:
                 outerHigh = y
                 break
-        print(f"outerHigh {outerHigh} outerLow {outerLow} outerHigh-outerLow {outerHigh-outerLow}")
         if (outerHigh-outerLow)<0.3*dy:
             searchCenter = (outerHigh+outerLow)//2
         else:
@@ -430,7 +385,7 @@ class Frame:
         sprocketSize    = innerHigh-innerLow
         #minSprocketSize = int(minSize)
         print(f"minSprocketSize {minSprocketSize}<sprocketSize {sprocketSize} {minSprocketSize<sprocketSize}")
-        print(f"maxSprocketSize {maxSprocketSize}>sprocketSize {sprocketSize} {maxSprocketSize>sprocketSize}")
+        print(f"maxSprocketSize {maxSprocketSize}>sprocketSize {sprocketSize} {maxSprocketSize<sprocketSize}")
         print(f"and sprocketSize<(outerHigh-outerLow) {sprocketSize<(outerHigh-outerLow)}")
         if minSprocketSize<sprocketSize and sprocketSize<(outerHigh-outerLow) and sprocketSize<maxSprocketSize:
             cY = (innerHigh+innerLow)//2
@@ -447,36 +402,33 @@ class Frame:
             locateHoleResult = 1
         xShift = 0
         if sprocketSize>0:
-            rx1 = x1
-            rx2 = x1 + 2*(x2-x1)
+            rx1 = Frame.holeCrop.x1
+            rx2 = Frame.holeCrop.x1 + 2*(Frame.holeCrop.x2-Frame.holeCrop.x1)
             ry = int(0.8*sprocketSize)
             ry1 = cY-ry//2
             ry2 = cY+ry//2
-            horizontalStrip = self.image[ry1:ry2,rx1:rx2,:]
+            horizontalStrip = self.imageSmall[ry1:ry2,rx1:rx2,:]
+            cv2.imwrite(f"/home/warwickh/horizontalStrip.png", horizontalStrip)
             horizontalEdges = np.absolute(cv2.Sobel(horizontalStrip,cv2.CV_64F,1,0,ksize=3))
             histoHori       = np.mean(horizontalEdges,axis=(0,2))
             smoothedHori    = cv2.GaussianBlur(histoHori,(1,5),0)
             maxPeakValueH   = smoothedHori.max()
             thresholdHori   = thresholds[1]*maxPeakValueH
             xShift = 0
-            locatedX = False
-            for x in range((x2-x1)//2,len(smoothedHori)):
+            for x in range((Frame.holeCrop.x2-Frame.holeCrop.x1)//2,len(smoothedHori)):
                 if smoothedHori[x]>thresholdHori:
-                    #xShift = x                 
-                    cX = x+x1
-                    locatedX = True                 
+                    xShift = x                 
                     break
-            #print(f"xShift before {xShift}")
-            #print(f"Try right edge {x1+xShift} cx half-width {(x2-x1)/2}")
-            #print(f"actual edge minus half width {x1+xShift-((x2-x1)/2)}")
-        #print(f"InnerLow {innerLow} InnerHigh {innerHigh} cY {cY}")
+            print(f"xShift before {xShift}")
+            print(f"Try right edge {Frame.holeCrop.x1+xShift} cx half-width {(Frame.holeCrop.x2-Frame.holeCrop.x1)/2}")
+            print(f"actual edge minus half width {Frame.holeCrop.x1+xShift-((Frame.holeCrop.x2-Frame.holeCrop.x1)/2)}")
+        print(f"InnerLow {innerLow} InnerHigh {innerHigh} Sprocketcentre {cY}")
         #return (xShift,dy//2-cY)
         #cY = dy//2-cY
-        #cX = int(x1+xShift-(x2-x1)/2) #calculated centre of hole from left of scan
+        cX = int(Frame.holeCrop.x1+xShift-((Frame.holeCrop.x2-Frame.holeCrop.x1)/2)) #calculated centre of hole from left of scan
         oldcX = self.cX
         oldcY = self.cY  
-        if locatedX:
-            self.cX = cX
+        self.cX = cX-Frame.holeCrop.x1
         self.cY = cY
         #locateHoleResult = 0
         plt.plot(smoothedHisto)
@@ -491,38 +443,37 @@ class Frame:
         plt.xlim([0, dy])
         #plt.show()
         plt.savefig("/home/warwickh/my_cv2hist.png")
-        plt.xlim(y1,y2)
+        plt.xlim(Frame.holeCrop.y1,Frame.holeCrop.y2)
         #plt.show()
         plt.savefig("/home/warwickh/my_cv2hist_lim.png")
         plt.clf()
-        print(f"InnerLow {innerLow} InnerHigh {innerHigh} cY {cY} cX {cX}")
+        print(f"InnerLow {innerLow} InnerHigh {innerHigh} cY {cY}")
 
         print("cY=", self.cY, "oldcY=", oldcY, "locateHoleResult=", locateHoleResult)
  
         p1 = (0, self.cY) 
-        p2 = (x2-x1, self.cY)
+        p2 = (Frame.holeCrop.x2-Frame.holeCrop.x1, self.cY)
         # print(p1, p2)
-        cv2.line(self.imageHoleCrop, p1, p2, (0, 0, 255), 3) #Horiz
+        cv2.line(self.imageHoleCrop, p1, p2, (0, 0, 255), 3)
         
         #p1 = (self.cX, 0) 
-        #p2 = (self.cX, y2-y1) 
+        #p2 = (self.cX, Frame.holeCrop.y2-Frame.holeCrop.y1) 
         
-        p1 = (self.cX, y1) 
-        p2 = (self.cX, y2) 
+        p1 = (self.cX, Frame.holeCrop.y1) 
+        p2 = (self.cX, Frame.holeCrop.y2) 
+        
         # print(p1, p2)
-        #cv2.line(self.imageHoleCrop, p1, p2, (0, 0, 255), 3) #Vert
-        cv2.line(self.image, p1, p2, (0, 0, 255), 3) #Vert
+        cv2.line(self.imageHoleCrop, p1, p2, (0, 0, 255), 3)
+        
         # show target midy
-        p1 = (0, int(midy)) 
-        p2 = (int(x2-x1), int(midy))
+        p1 = (0, self.midy) 
+        p2 = (Frame.holeCrop.x2-Frame.holeCrop.x1, self.midy)
         cv2.line(self.imageHoleCrop, p1, p2, (0, 255, 0), 1)  # black line
-        p1 = (0, int(midy+1))
-        p2 = (int(x2-x1), int(midy+1))
+        p1 = (0, self.midy+1)
+        p2 = (Frame.holeCrop.x2-Frame.holeCrop.x1, self.midy+1)
         cv2.line(self.imageHoleCrop, p1, p2, (255, 255, 255), 1) # white line
-        self.imageHoleCrop = cv2.resize(self.imageHoleCrop, (0,0), fx=1/Frame.ScaleFactor, fy=1/Frame.ScaleFactor)
-        cv2.imwrite(f"/home/warwickh/horizontalStrip.png", horizontalStrip)
+        
         cv2.imwrite(f"/home/warwickh/sprocketStrip.png", self.imageHoleCrop)
-        cv2.imwrite(f"/home/warwickh/image.png", self.image)
             
         self.locateHoleResult = locateHoleResult
         return locateHoleResult
