@@ -1,5 +1,5 @@
 [paths]
-film_folder = /home/warwickh/Videos
+film_folder = /mnt/admiral/nextcloud/telecine/film
 scan_folder = /home/warwickh/scanframes/1
 crop_folder = /home/warwickh/cropfiles
 
@@ -13,10 +13,10 @@ framerate = 24
 steps_pr_frame = 100
 
 [frame_crop]
-x1 = 2
-x2 = 1455
-y1 = -107
-y2 = 933
+x1 = 98
+x2 = 1577
+y1 = -980
+y2 = 107
 
 [white_crop]
 x1 = 562
@@ -27,8 +27,8 @@ y2 = 240
 [hole_crop]
 x1 = 75
 x2 = 110
-y1 = 0
-y2 = 2463
+y1 = 141
+y2 = 361
 
 [frame]
 hole_min_area = 1800
