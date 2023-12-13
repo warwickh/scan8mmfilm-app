@@ -331,7 +331,7 @@ class Window(QMainWindow, Ui_MainWindow):
         image = picam2.wait(job)
         # print("picture taken!")
         sleep(0.5)
-        image = cv2.resize(image, (640, 480))
+        #image = cv2.resize(image, (640, 480))
         self.frame = Frame(image=image)
         self.frame.calcCrop()
         self.lblHoleCrop.setPixmap(self.frame.getHoleCrop())
@@ -674,30 +674,30 @@ class QThreadScan(QtCore.QThread):
                         break
                            
                 
-                
-                tolstep = int(abs(self.frame.cY-self.midy)/self.pixelsPerStep)
+                currentcY = self.frame.cY//self.frame.ScaleFactor
+                tolstep = int(abs(currentcY-self.midy)//self.pixelsPerStep)
                 #tolstep = 6
-                print(f"{self.frame.cY}-----------------------------------------------")
-                if self.frame.cY > self.midy + self.tolerance:
+                print(f"{currentcY}-----------------------------------------------")
+                if currentcY > self.midy + self.tolerance:
                     #self.motorStart()
                     pidevi.spoolFwd(0.005)
                     self.sigProgress.emit(f"{self.frameNo} adjusting up", self.frameNo, self.frame)
-                    print(f"{self.frame.cY} lower than {self.midy} so Moving up {abs(self.frame.cY-self.midy)} pixels {tolstep} steps")  
+                    print(f"{currentcY} lower than {self.midy} so Moving up {abs(currentcY-self.midy)} pixels {tolstep} steps")  
                     pidevi.stepCw(tolstep)
                     sleep(.4)  
-                    oldY = self.frame.cY
+                    oldY = currentcY
 
-                elif self.frame.cY < self.midy - self.tolerance:
+                elif currentcY < self.midy - self.tolerance:
                     self.sigProgress.emit(f"{self.frameNo} adjusting down", self.frameNo, self.frame)  
-                    print(f"{self.frame.cY} higher than {self.midy} so Moving down {abs(self.frame.cY-self.midy)} pixels {tolstep} steps")
+                    print(f"{currentcY} higher than {self.midy} so Moving down {abs(currentcY-self.midy)} pixels {tolstep} steps")
                     pidevi.spoolBack(0.005)  
                     pidevi.stepCcw(tolstep)
                     sleep(.4) 
-                    oldY = self.frame.cY 
+                    oldY = currentcY 
                     
-                elif (self.frame.cY <= self.midy + self.tolerance) and (self.frame.cY >= self.midy - self.tolerance):
+                elif (currentcY <= self.midy + self.tolerance) and (currentcY >= self.midy - self.tolerance):
                     self.saveFrame() 
-                    print(f"{self.frame.cY}=========================================================")  
+                    print(f"{currentcY}=========================================================")  
                     #self.motorStart()
                     pidevi.spoolFwd(0.1)          
                     pidevi.stepCw(Film.StepsPrFrame)
