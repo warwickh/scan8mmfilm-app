@@ -75,6 +75,14 @@ def setLedDc(dc):
     led_dc = dc
     led_pwm.ChangeDutyCycle(led_dc)
 
+def ledPlus():
+    led_dc+=10
+    led_pwm.ChangeDutyCycle(led_dc)
+    
+def ledMinus():
+    led_dc=-dc
+    led_pwm.ChangeDutyCycle(led_dc)
+
 def spoolFwd(time=1):
     print("Spool forward")
     spoolTimer = Timer(time, spoolStop)

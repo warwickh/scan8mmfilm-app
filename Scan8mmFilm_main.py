@@ -61,10 +61,10 @@ class Window(QMainWindow, Ui_MainWindow):
         QTimer.singleShot(100, self.initScanner)
 
     def connectSignalsSlots(self):
-        if picamera2_present:
-            self.chkRewind.toggled.connect(self.rewindChanged)
-        else:
-            self.chkRewind.setDisabled(True)
+        #if picamera2_present:
+        #    self.chkRewind.toggled.connect(self.rewindChanged)
+        #else:
+        #    self.chkRewind.setDisabled(True)
         self.pbtnStart.clicked.connect(self.start)
         self.pbtnStop.clicked.connect(self.stop)
         self.pbtnUp.clicked.connect(self.up)
@@ -76,7 +76,9 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnPrevious.clicked.connect(self.previous)
         self.pbtnRandom.clicked.connect(self.random)
         self.pbtnMakeFilm.clicked.connect(self.makeFilm)
-        self.edlMinHoleArea.editingFinished.connect(self.minHoleAreaChanged)
+        self.pbtnLedPlus.clicked.connect(self.ledPlus)
+        self.pbtnLedMinus.clicked.connect(self.ledMinus)
+        self.pbtnRewind.clicked.connect(self.rewind)
         self.actionExit.triggered.connect(self.doClose)
         self.actionAbout.triggered.connect(self.about)
         if  picamera2_present:
@@ -305,18 +307,21 @@ class Window(QMainWindow, Ui_MainWindow):
     def adjustableRectChanged(self, i):
         self.adjRectIx = i
         self.showAdjustValues()
-        
-    def minHoleAreaChanged(self):
-        minArea = int(self.edlMinHoleArea.text())
-        if minArea > 200 and minArea <= 30000:
-            Frame.holeMinArea = minArea
-        
-    def rewindChanged(self):
-        if picamera2_present:
-            if self.chkRewind.isChecked():
+
+    def ledPlus(self):
+        if self.rbtnScan.isChecked():
+            if picamera2_present:
+                pidevi.ledPlus()
+
+    def ledMinus(self):
+        if self.rbtnScan.isChecked():
+            if picamera2_present:
+                pidevi.ledMinus()
+
+    def rewind(self):
+        if self.rbtnCrop.isChecked():
+            if picamera2_present:
                 pidevi.rewind()
-            else:
-                pidevi.spoolStop()
             
     # Process or timer actions ---------------------------------------------------------------------------------------------------------
 
@@ -415,13 +420,17 @@ class Window(QMainWindow, Ui_MainWindow):
         self.rbtnCrop.setEnabled(idle)
         
         self.pbtnMakeFilm.setEnabled(idle and crop and frame)
-        self.chkRewind.setEnabled(pi and crop)
+        #self.chkRewind.setEnabled(pi and crop)
         self.menuFile.setEnabled(idle)
         self.edlFilmName.setEnabled(idle)
 
         self.comboBox.setEnabled(idle and crop and frame)
         self.rbtnPosition.setEnabled(idle and crop and frame)
         self.rbtnSize.setEnabled(idle and crop and frame)
+
+        self.pbtnLedPlus.setEnabled(scan)
+        self.pbtnLedMinus.setEnabled(scan)
+        self.pbtnRewind.setEnabled(crop)
 
     # Shared GUI update methods ---------------------------------------------------------------------------------------------------------------------------     
 
