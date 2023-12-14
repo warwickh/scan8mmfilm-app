@@ -430,7 +430,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         self.pbtnLedPlus.setEnabled(scan)
         self.pbtnLedMinus.setEnabled(scan)
-        self.pbtnRewind.setEnabled(crop)
+        self.pbtnRewind.setEnabled(pi and (crop or scan))
 
     # Shared GUI update methods ---------------------------------------------------------------------------------------------------------------------------     
 
