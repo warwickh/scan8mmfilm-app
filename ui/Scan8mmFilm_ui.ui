@@ -22,6 +22,7 @@
   <widget class="QWidget" name="centralwidget">
    <property name="font">
     <font>
+     <family>Arial</family>
      <pointsize>9</pointsize>
     </font>
    </property>
@@ -303,7 +304,7 @@
           <number>2</number>
          </property>
          <item>
-          <layout class="QVBoxLayout" name="verticalLayout_3" stretch="0,0,0,0,0,0">
+          <layout class="QVBoxLayout" name="verticalLayout_3" stretch="0,0,0,0,0,0,0">
            <property name="spacing">
             <number>4</number>
            </property>
@@ -408,7 +409,32 @@
              </property>
             </widget>
            </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_5">
+             <item>
+              <widget class="QPushButton" name="pbtnLedMinus">
+               <property name="text">
+                <string>LED-</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="pbtnLedPlus">
+               <property name="text">
+                <string>LED+</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
           </layout>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pbtnRewind">
+           <property name="text">
+            <string>Rewind</string>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>
@@ -431,12 +457,33 @@
     <item>
      <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0">
       <item>
-       <layout class="QGridLayout" name="gridLayout" columnstretch="3,2,2,0" columnminimumwidth="0,0,0,0">
+       <layout class="QGridLayout" name="gridLayout" columnstretch="3,0,0,0">
         <property name="sizeConstraint">
          <enum>QLayout::SetDefaultConstraint</enum>
         </property>
+        <item row="0" column="1">
+         <widget class="QLabel" name="lblCropInfo">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
         <item row="1" column="1">
          <widget class="QLabel" name="lblScanInfo">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QLabel" name="lblInfo1">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="QLabel" name="lblInfo2">
           <property name="text">
            <string/>
           </property>
@@ -449,20 +496,6 @@
           </property>
           <property name="placeholderText">
            <string>&lt;Enter film name&gt;</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="2">
-         <widget class="QLabel" name="lblInfo1">
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QLabel" name="lblCropInfo">
-          <property name="text">
-           <string/>
           </property>
          </widget>
         </item>
@@ -479,18 +512,12 @@
           </property>
          </widget>
         </item>
-        <item row="1" column="2">
-         <widget class="QLabel" name="lblInfo2">
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
         <item row="0" column="3">
          <widget class="QLabel" name="lblArea">
           <property name="font">
            <font>
-            <weight>75</weight>
+            <family>Arial</family>
+            <pointsize>9</pointsize>
             <bold>true</bold>
            </font>
           </property>
@@ -501,9 +528,6 @@
            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
           </property>
          </widget>
-        </item>
-        <item row="1" column="3">
-         <widget class="QLineEdit" name="edlMinHoleArea"/>
         </item>
        </layout>
       </item>
@@ -554,8 +578,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>755</width>
-             <height>505</height>
+             <width>762</width>
+             <height>525</height>
             </rect>
            </property>
            <property name="sizePolicy">
@@ -639,7 +663,7 @@
      <x>0</x>
      <y>0</y>
      <width>1029</width>
-     <height>26</height>
+     <height>19</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuMain">
