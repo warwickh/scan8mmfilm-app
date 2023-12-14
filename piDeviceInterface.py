@@ -43,6 +43,9 @@ step_plus = 0
 rewind = 0
 
 pwm = None
+led_pwm = None
+
+led_dc = 100
     
 def initGpio() :
     global pwm
@@ -62,17 +65,15 @@ def initGpio() :
     GPIO.setup(photoint, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.setup((18, 15, 14), GPIO.OUT)
 
-    GPIO.output(ledon, GPIO.HIGH)  # turn on LED
+    #GPIO.output(ledon, GPIO.HIGH)  # turn on LED
     
-    pwm = GPIO.PWM(6, 40)  # set PWM channel, hz
-    print("GPIO setup")
-    
-#def spoolStart():
-#    pint = GPIO.input(photoint)
-#    if pint:
-#        pwm.start(10)
-#    else:
-#        pwm.ChangeDutyCycle(0)
+    pwm = GPIO.PWM(pin_forward, 40)  # set PWM channel, hz
+    led_pwm = GPIO.PWM(ledon, 40)
+    led_pwm.start(led_dc)
+
+def setLedDc(dc):
+    led_dc = dc
+    led_pwm.ChangeDutyCycle(led_dc)
 
 def spoolFwd(time=1):
     print("Spool forward")
@@ -99,7 +100,6 @@ def spoolStop():
     pwm.ChangeDutyCycle(0)
     GPIO.output(pin_forward, GPIO.LOW)
     GPIO.output(pin_backward, GPIO.LOW)
-    #GPIO.output(STEPON, GPIO.LOW)
     pwm.ChangeDutyCycle(0)
 
 def rewind():
@@ -108,7 +108,6 @@ def rewind():
     GPIO.output(pin_backward, GPIO.LOW)
 
 def stepCw(steps):
-    #spoolStart()
     for x in range(steps):
         GPIO.output(DIR, CW)
         GPIO.output(STEP, GPIO.HIGH)
@@ -116,9 +115,7 @@ def stepCw(steps):
         GPIO.output(STEP, GPIO.LOW)
         sleep(delay)
 
-
 def stepCcw(steps):
-    #spoolBack()
     for x in range(steps):
         GPIO.output(DIR, CCW)
         GPIO.output(STEP, GPIO.HIGH)
@@ -133,7 +130,8 @@ def stopScanner():
 
 def startScanner():
     GPIO.output((18, 15, 14), (1, 1, 0))
-    GPIO.output(ledon, GPIO.HIGH)  # turn on LED
+    #GPIO.output(ledon, GPIO.HIGH)  # turn on LED
+    setLedDc(100)
     GPIO.output(STEPON, GPIO.HIGH)
     sleep(0.5)
 

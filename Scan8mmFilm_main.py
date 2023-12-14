@@ -460,7 +460,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def updateInfoPanel(self):
         self.lblCropInfo.setText(f"Cropped frame count {Film.getCropCount()}")
-        self.edlMinHoleArea.setText(str(Frame.holeMinArea))
+        #self.edlMinHoleArea.setText("N/A")#str(Frame.holeMinArea))
         if self.frame is not None:
             frame = self.frame
             self.lblScanInfo.setText(f"Frame {self.film.curFrameNo} of {self.film.scanFileCount}")
@@ -469,9 +469,9 @@ class Window(QMainWindow, Ui_MainWindow):
             else:
                 self.lblScanFrame.setText(self.frame.imagePathName)       
                     
-            self.lblInfo1.setText(f"cX={frame.cX} cY={frame.cY} midy={Frame.midy}")
-            if frame.area is not None:
-                self.lblInfo2.setText(f"res={frame.locateHoleResult} wTrsh={frame.whiteTreshold} area={int(frame.area)}")
+            self.lblInfo1.setText(f"cX={frame.cX} cY={frame.cY} midy={frame.midy}")
+            if frame.sprocketSize is not None:
+                self.lblInfo2.setText(f"res={frame.locateHoleResult} sprocketSize={frame.sprocketSize}")
         else:
             self.lblScanInfo.setText(f"Frame count = {self.film.scanFileCount}")
             self.lblScanFrame.setText(Film.scanFolder) 
@@ -699,7 +699,7 @@ class QThreadScan(QtCore.QThread):
                     self.saveFrame() 
                     print(f"{currentcY}=========================================================")  
                     #self.motorStart()
-                    pidevi.spoolFwd(0.1)          
+                    pidevi.spoolFwd(0.15)          
                     pidevi.stepCw(Film.StepsPrFrame)
                     self.frameNo += 1
                     adjustedY = 0
@@ -726,6 +726,10 @@ class QThreadScan(QtCore.QThread):
 # =============================================================================
 
 if __name__ == "__main__":
+    app = QApplication(sys.argv) 
+    win = Window()
+    win.show()
+    sys.exit(app.exec())
     try:
         
         app = QApplication(sys.argv) 
