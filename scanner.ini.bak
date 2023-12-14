@@ -1,0 +1,36 @@
+[paths]
+film_folder = /home/warwickh/Videos
+scan_folder = /home/warwickh/scanframes
+crop_folder = /home/warwickh/cropframes
+
+[camera]
+view_width = 3280
+view_height = 2464
+
+[film]
+resolution = 1440x1080
+framerate = 24
+steps_pr_frame = 100
+
+[frame_crop]
+x1 = 2
+x2 = 1455
+y1 = -107
+y2 = 933
+
+[white_crop]
+x1 = 562
+x2 = 574
+y1 = 130
+y2 = 240
+
+[hole_crop]
+x1 = 75
+x2 = 110
+y1 = 0
+y2 = 2463
+
+[frame]
+hole_min_area = 1800
+midy = 240
+
