@@ -332,8 +332,8 @@ class Frame:
                 print(f"Found hole starting at {peaks[i]} which is {(midy-peaks[i])/dy:.2f} from the centre")
                 print(f"Check dist from centre {abs((midy-peaks[i])/dy):.2f}")
                 if abs((midy-peaks[i])/dy)<0.3:
-                    y1=int(peaks[i]-(template[0]*Frame.ScaleFactor))
-                    y2=int(peaks[i]+(template[1]*Frame.ScaleFactor))
+                    y1=int(peaks[i]-(1*self.maxSprocketSize))
+                    y2=int(peaks[i]+(1.5*self.maxSprocketSize))
                     print(f"New y1 {y1} new y2 {y2}")
                     frameLocated = True
                     break
@@ -346,8 +346,8 @@ class Frame:
                     print(f"Found hole backwards starting at {peaks[i+1]} which is {(midy-peaks[i+1])/dy:.2f} from the centre")
                     print(f"Check dist from centre {abs((midy-peaks[i+1])/dy):.2f}")
                     if abs((midy-peaks[i+1])/dy)<0.3:
-                        y1=int(peaks[i+1]-(template[0]*Frame.ScaleFactor))
-                        y2=int(peaks[i+1]+(template[1]*Frame.ScaleFactor))
+                        y1=int(peaks[i+1]-(1*self.maxSprocketSize))
+                        y2=int(peaks[i+1]+(1.5*self.maxSprocketSize))
                         print(f"New y1 {y1} new y2 {y2}")
                         break
         #Locate sprocket in reduced range
