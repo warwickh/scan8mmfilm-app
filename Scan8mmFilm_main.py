@@ -208,7 +208,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.enableButtons(busy=True)  
                 self.motorStart()
                 pidevi.spoolFwd(0.5)
-                pidevi.stepCw(Film.StepsPrFrame)
+                pidevi.stepCw(self.film.stepsPrFrame)
                 #pidevi.spoolStart()
                 self.showHoleCrop()
         else:
@@ -222,7 +222,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.enableButtons(busy=True)  
                 self.motorStart()
                 pidevi.spoolBack(0.02)
-                pidevi.stepCcw(Film.StepsPrFrame)
+                pidevi.stepCcw(self.film.stepsPrFrame)
                 #pidevi.spoolStart()
                 self.showHoleCrop()
         else:
@@ -311,12 +311,14 @@ class Window(QMainWindow, Ui_MainWindow):
     def ledPlus(self):
         if self.rbtnScan.isChecked():
             if picamera2_present:
-                pidevi.ledPlus()
+                Film.led_dc = pidevi.ledPlus()
+                print(f"LED DC now {Film.led_dc}")
 
     def ledMinus(self):
         if self.rbtnScan.isChecked():
             if picamera2_present:
-                pidevi.ledMinus()
+                Film.led_dc = pidevi.ledMinus()
+                print(f"LED DC now {Film.led_dc}")
 
     def rewind(self):
         if self.rbtnCrop.isChecked():
@@ -478,7 +480,7 @@ class Window(QMainWindow, Ui_MainWindow):
             else:
                 self.lblScanFrame.setText(self.frame.imagePathName)       
                     
-            self.lblInfo1.setText(f"cX={frame.cX} cY={frame.cY} midy={frame.midy}")
+            self.lblInfo1.setText(f"cX={frame.cX} cY={frame.cY} midy={frame.midy} led={Film.led_dc}")
             if frame.sprocketSize is not None:
                 self.lblInfo2.setText(f"res={frame.locateHoleResult} sprocketSize={frame.sprocketSize}")
         else:
@@ -628,10 +630,10 @@ class QThreadScan(QtCore.QThread):
         QtCore.QThread.__init__(self, parent)
         self.film = film
         self.cmd = 1 # run 
-        self.midy = Frame.midy
+        self.midy = None#self.frame.midy #TODO switch to per frame setting
         self.tolerance = 5
         self.pixelsPerStep = 4
-
+        self.parent = parent
         self.frameNo = Film.getFileCount(Film.scanFolder)
         
     def on_source(self, cmd):
@@ -664,11 +666,12 @@ class QThreadScan(QtCore.QThread):
                 self.frame = Frame(image=image)
                 locateHoleResult = self.frame.locateSprocketHoleNew()#Frame.holeMinArea)
                 
-                print("cY",self.frame.cY ,"oldY", oldY, "locateHoleResult", locateHoleResult,"cmd",self.cmd,"area",self.frame.area)
+                print("cY",self.frame.cY ,"oldY", oldY, "locateHoleResult", locateHoleResult,"cmd",self.cmd,"sprocketsize",self.frame.sprocketSize)
                 
                 if locateHoleResult != 0 :
                     if locateHoleResult==2:
-                        pidevi.stepCw(6)
+                        #pidevi.stepCw(6)
+                        pass
                     else:
                         self.cmd = 2
                         self.locateHoleResult = locateHoleResult
@@ -681,35 +684,37 @@ class QThreadScan(QtCore.QThread):
                         # film really really stuck
                         self.cmd = 3
                         break
-                           
-                
-                currentcY = self.frame.cY//self.frame.ScaleFactor
-                tolstep = int(abs(currentcY-self.midy)//self.pixelsPerStep)
-                #tolstep = 6
+                self.midy = self.frame.midy
+                currentcY = self.frame.cY#//self.frame.ScaleFactor
+                tolerance = self.tolerance*self.frame.ScaleFactor
+                tolstep = int(abs(currentcY-self.frame.midy)//self.frame.ScaleFactor//self.pixelsPerStep)
+                #tolstep = 4
                 print(f"{currentcY}-----------------------------------------------")
-                if currentcY > self.midy + self.tolerance:
+                if currentcY > self.midy + tolerance:
                     #self.motorStart()
                     pidevi.spoolFwd(0.005)
                     self.sigProgress.emit(f"{self.frameNo} adjusting up", self.frameNo, self.frame)
                     print(f"{currentcY} lower than {self.midy} so Moving up {abs(currentcY-self.midy)} pixels {tolstep} steps")  
                     pidevi.stepCw(tolstep)
-                    sleep(.4)  
+                    sleep(.2)  
                     oldY = currentcY
 
-                elif currentcY < self.midy - self.tolerance:
+                elif currentcY < self.midy - tolerance:
                     self.sigProgress.emit(f"{self.frameNo} adjusting down", self.frameNo, self.frame)  
                     print(f"{currentcY} higher than {self.midy} so Moving down {abs(currentcY-self.midy)} pixels {tolstep} steps")
-                    pidevi.spoolBack(0.005)  
+                    #self.motorStart()
+                    #pidevi.spoolBack(0.005)
+                    #pidevi.adjDn()  
                     pidevi.stepCcw(tolstep)
-                    sleep(.4) 
+                    sleep(.2) 
                     oldY = currentcY 
                     
-                elif (currentcY <= self.midy + self.tolerance) and (currentcY >= self.midy - self.tolerance):
+                elif (currentcY <= self.midy + tolerance) and (currentcY >= self.midy - tolerance):
                     self.saveFrame() 
-                    print(f"{currentcY}=========================================================")  
+                    print(f"cY {currentcY} midy {self.midy} tol {tolerance} =========================================================")  
                     #self.motorStart()
                     pidevi.spoolFwd(0.15)          
-                    pidevi.stepCw(Film.StepsPrFrame)
+                    pidevi.stepCw(self.film.stepsPrFrame)
                     self.frameNo += 1
                     adjustedY = 0
                     stuckCount = 0

@@ -36,6 +36,7 @@ class Ini:
             Camera.ViewHeight = config[Ini.camera].getint('view_height')
 
             Film.format = config[Ini.film]['format']
+            Film.led_dc = config[Ini.film].getint('led_dc')
             Film.resolution = config[Ini.film]['resolution']
             Film.s8_framerate = config[Ini.film].getint('s8_framerate')
             Film.s8_stepsPrFrame = config[Ini.film].getint('s8_steps_pr_frame')
@@ -79,6 +80,7 @@ class Ini:
         if not config.has_section(Ini.film):
             config[Ini.film] = {}
         config[Ini.film]['format'] = Film.format
+        config[Ini.film]['led_dc'] = str(Film.led_dc)
         config[Ini.film]['resolution'] = Film.resolution
         config[Ini.film]['s8_framerate']  = str(Film.s8_framerate)
         config[Ini.film]['s8_steps_pr_frame'] = str(Film.s8_stepsPrFrame)
@@ -181,16 +183,17 @@ class Frame:
     ScaleFactor = 1.0 # overwritten by initScaleFactor()
     outerThresh = 0.65
     innerThresh = 0.3
-    s8_template = [60,155]
-    r8_template = [60,155]
+    s8_template = [60,155,60]
+    r8_template = [60,155,60]
 
     def initScaleFactor():
         Frame.ScaleFactor = Camera.ViewWidth/640.0 
               
     def getHoleCropWidth():
         if Frame.format == "s8":
-            return 2*(Frame.s8_holeCrop.x2-Frame.s8_holeCrop.x1) #wider to capture vertical line also
-        return 2*(Frame.r8_holeCrop.x2-Frame.r8_holeCrop.x1) #wider to capture vertical line also
+            return 1*(Frame.s8_holeCrop.x2-Frame.s8_holeCrop.x1) #wider to capture vertical line also
+        else:
+            return 1*(Frame.r8_holeCrop.x2-Frame.r8_holeCrop.x1) #wider to capture vertical line also
         #return self.holeCrop.x2 - Frame.holeCrop.x1
     
     def __init__(self, imagePathName=None,*,image=None):
@@ -222,7 +225,7 @@ class Frame:
         self.sprocketSize = 0    
         
         self.locateHoleResult = 1
-        print(f"init complete {self.__dict__}")
+        #print(f"init complete {self.__dict__}")
         
     def convert_cv_qt(self, cv_img, dest=None):
         """Convert from an opencv image to QPixmap"""
@@ -243,6 +246,7 @@ class Frame:
         return self.convert_cv_qt(self.imageCropped, dest)
         
     def getHoleCrop(self) :
+        cv2.imwrite(f"./getHoleCrop.png", self.imageHoleCrop)
         return self.convert_cv_qt(self.imageHoleCrop)
 
     def calcCrop(self):
@@ -291,7 +295,7 @@ class Frame:
     # 0: hole found, 1: hole not found, 2: hole to large, 3: no center
     def locateSprocketHoleNew(self):
         print(f"locateSprocketHoleNew {self.image.shape}")
-        thresholds = [0.5,0.3]          # edge thresholds; first one higher, second one lower
+        #thresholds = [0.5,0.3]          # edge thresholds; first one higher, second one lower
         filterSize = 25                 # smoothing kernel - leave it untouched
         #print(f"Check Frame.holeCrop.y1 {Frame.holeCrop.y1} Frame.holeCrop.y2 {Frame.holeCrop.y2}")
         midy = self.midy
@@ -320,14 +324,17 @@ class Frame:
             if smoothedHisto[y]<outerThreshold and smoothedHisto[y+1]>outerThreshold:
                 peaks.append(y)
         print(f"Peaks {peaks} midy {midy}")
+        print(f"Template {template[0]} {template[1]} {template[2]}")
         #Find a range containing a sprocket closest to centre by comparing sprocket/not sprocket gaps with template
         #Try forward first. Backwards may be necessary if less peaks are detected
         #detected sprocket must be within 0.3 of the frame
         frameLocated=False
         for i in range(0,len(peaks)-2):
             #try forwards
-            print(f"{peaks[i+1]-peaks[i]} - {template[0]*Frame.ScaleFactor} = {peaks[i+1]-peaks[i]-(template[0]**Frame.ScaleFactor):.2f}")
-            print(f"and {peaks[i+2]-peaks[i+1]} -{template[1]} = {peaks[i+2]-peaks[i+1]-template[1]} ")
+            print("forwards")
+            print(f"{peaks[i+1]-peaks[i]} - {template[0]*Frame.ScaleFactor} = {peaks[i+1]-peaks[i]-(template[0]*Frame.ScaleFactor):.2f}")
+            print(f"and {peaks[i+2]-peaks[i+1]} -{template[1]*Frame.ScaleFactor} = {peaks[i+2]-peaks[i+1]-(template[1]*Frame.ScaleFactor)} ")
+            print(f"gap thresh {gap_thresh}")
             if(abs(peaks[i+1]-peaks[i]-(template[0]*Frame.ScaleFactor))<gap_thresh) and (abs(peaks[i+2]-peaks[i+1]-(template[1]*Frame.ScaleFactor))<gap_thresh):
                 print(f"Found hole starting at {peaks[i]} which is {(midy-peaks[i])/dy:.2f} from the centre")
                 print(f"Check dist from centre {abs((midy-peaks[i])/dy):.2f}")
@@ -340,8 +347,9 @@ class Frame:
         if not frameLocated:
             for i in range(0,len(peaks)-2):
                 #try backwards
-                print(f"{peaks[i+1]-peaks[i]} - {template[1]*Frame.ScaleFactor} = {peaks[i+1]-peaks[i]-(template[1]**Frame.ScaleFactor):.2f}")
-                print(f"and {peaks[i+2]-peaks[i+1]} -{template[0]} = {peaks[i+2]-peaks[i+1]-template[0]} ")
+                print("backwards")
+                print(f"{peaks[i+1]-peaks[i]} - {template[1]*Frame.ScaleFactor} = {peaks[i+1]-peaks[i]-(template[1]*Frame.ScaleFactor):.2f}")
+                print(f"and {peaks[i+2]-peaks[i+1]} -{template[0]*Frame.ScaleFactor} = {peaks[i+2]-peaks[i+1]-template[0]*Frame.ScaleFactor} ")
                 if(abs(peaks[i+1]-peaks[i]-(template[1]*Frame.ScaleFactor))<gap_thresh) and (abs(peaks[i+2]-peaks[i+1]-(template[0]*Frame.ScaleFactor))<gap_thresh):
                     print(f"Found hole backwards starting at {peaks[i+1]} which is {(midy-peaks[i+1])/dy:.2f} from the centre")
                     print(f"Check dist from centre {abs((midy-peaks[i+1])/dy):.2f}")
@@ -409,7 +417,7 @@ class Frame:
             histoHori       = np.mean(horizontalEdges,axis=(0,2))
             smoothedHori    = cv2.GaussianBlur(histoHori,(1,5),0)
             maxPeakValueH   = smoothedHori.max()
-            thresholdHori   = thresholds[1]*maxPeakValueH
+            thresholdHori   = Frame.innerThresh*maxPeakValueH
             for x in range((x2-x1)//2,len(smoothedHori)):
                 if smoothedHori[x]>thresholdHori:
                     #xShift = x                 
@@ -439,11 +447,14 @@ class Frame:
         p1 = (0, int(midy)) 
         p2 = (int(self.cX-x1), int(midy))
         print(f"MidY line points {p1} {p2}")
-        cv2.line(self.imageHoleCrop, p1, p2, (0, 0, 0), 2)  # black line
-        p1 = (0, int(midy+2))
-        p2 = (int(self.cX-x1), int(midy+2))
-        cv2.line(self.imageHoleCrop, p1, p2, (255, 255, 255), 2) # white line
-        self.imageHoleCrop = cv2.resize(self.imageHoleCrop, (0,0), fx=1/Frame.ScaleFactor, fy=1/Frame.ScaleFactor)
+        cv2.line(self.imageHoleCrop, p1, p2, (0, 0, 0), 3)  # black line
+        p1 = (0, int(midy+3))
+        p2 = (int(self.cX-x1), int(midy+3))
+        cv2.line(self.imageHoleCrop, p1, p2, (255, 255, 255), 3) # white line
+        
+        self.imageHoleCrop = cv2.resize(self.imageHoleCrop, (0,0), fx=1/self.ScaleFactor, fy=1/self.ScaleFactor)
+
+
 
         plt.plot(smoothedHisto)
         plt.axvline(cY, color='blue', linewidth=1)
@@ -474,6 +485,7 @@ class Film:
     resolution = "720x540"
     s8_framerate = 24
     r8_framerate = 12
+    led_dc = 100
     s8_stepsPrFrame = 100 # value for Standard 8
     r8_stepsPrFrame = 80 # value for Standard 8
     filmFolder = os.path.join(defaultBaseDir, "film")
@@ -485,6 +497,12 @@ class Film:
         self.scanFileCount = Film.getFileCount(Film.scanFolder)  # - number of *.jpg files in scan directory
         self.curFrameNo = -1
         self.p = None
+        if Film.format == "s8":
+            self.stepsPrFrame = Film.s8_stepsPrFrame
+            self.framerate = Film.s8_framerate
+        else:
+            self.stepsPrFrame = Film.r8_stepsPrFrame
+            self.framerate = Film.r8_framerate
      
     def getCurrentFrame(self):
         self.curFrameNo -= 1
@@ -631,11 +649,11 @@ class Film:
             self.p.stateChanged.connect(self.handle_state)
             self.p.finished.connect(self.process_finished)  # Clean up once complete.
             self.p.start("ffmpeg", [
-                "-framerate", str(Film.Framerate), 
+                "-framerate", str(self.framerate), 
                 "-f", "image2",
                 "-pattern_type", "sequence",
                 "-i", os.path.join(Film.cropFolder, "frame%06d.jpg"),
-                "-s", Film.Resolution,
+                "-s", Film.resolution,
                 "-preset", "ultrafast", filmPathName
                 ])
   

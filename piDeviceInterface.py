@@ -33,7 +33,7 @@ ledon = 12  # pin for LED
 pin_forward = 6  # motor pin (spool)
 pin_backward = 5
 
-delay = .001  # delay inbetween steps
+delay = .005  # delay inbetween steps
 tolstep = 2 // 2  # defines how many steps are done for correction
 steps = 0
 
@@ -42,13 +42,14 @@ step_minus = 0  # counter for stepper corrections
 step_plus = 0
 rewind = 0
 
-pwm = None
+spool_pwm = None
 led_pwm = None
 
 led_dc = 100
     
 def initGpio() :
-    global pwm
+    global spool_pwm
+    global led_pwm
     
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(DIR, GPIO.OUT)
@@ -67,21 +68,30 @@ def initGpio() :
 
     #GPIO.output(ledon, GPIO.HIGH)  # turn on LED
     
-    pwm = GPIO.PWM(pin_forward, 40)  # set PWM channel, hz
+    spool_pwm = GPIO.PWM(pin_forward, 40)  # set PWM channel, hz
     led_pwm = GPIO.PWM(ledon, 40)
     led_pwm.start(led_dc)
 
 def setLedDc(dc):
+    global led_dc
     led_dc = dc
     led_pwm.ChangeDutyCycle(led_dc)
 
 def ledPlus():
+    global led_dc
     led_dc+=10
+    if led_dc>100:
+        led_dc=100
     led_pwm.ChangeDutyCycle(led_dc)
+    return led_dc
     
 def ledMinus():
-    led_dc=-dc
+    global led_dc
+    led_dc-=10
+    if led_dc<0:
+        led_dc=0
     led_pwm.ChangeDutyCycle(led_dc)
+    return led_dc
 
 def spoolFwd(time=1):
     print("Spool forward")
@@ -91,9 +101,9 @@ def spoolFwd(time=1):
     if pint:
         GPIO.output(pin_forward, GPIO.HIGH)
         GPIO.output(pin_backward, GPIO.LOW)
-        pwm.start(10)
+        spool_pwm.start(10)
     else:
-        pwm.ChangeDutyCycle(0)
+        spool_pwm.ChangeDutyCycle(0)
 
 def spoolBack(time=1):
     print("Spool back")
@@ -101,31 +111,52 @@ def spoolBack(time=1):
     spoolTimer.start()
     GPIO.output(pin_forward, GPIO.LOW)
     GPIO.output(pin_backward, GPIO.HIGH)
-    pwm.start(10)
+    spool_pwm.start(10)
     
 def spoolStop():
     print("Spool stop")
-    pwm.ChangeDutyCycle(0)
+    spool_pwm.ChangeDutyCycle(0)
     GPIO.output(pin_forward, GPIO.LOW)
     GPIO.output(pin_backward, GPIO.LOW)
-    pwm.ChangeDutyCycle(0)
+    spool_pwm.ChangeDutyCycle(0)
 
 def rewind():
-    pwm.ChangeDutyCycle(50)
+    spool_pwm.ChangeDutyCycle(50)
     GPIO.output(pin_forward, GPIO.HIGH)
     GPIO.output(pin_backward, GPIO.LOW)
 
-def stepCw(steps):
+def stepHigh():
+    GPIO.output(STEP, GPIO.HIGH)
+    Timer(delay, stepLow).start()
+
+def stepLow():
+    GPIO.output(STEP, GPIO.LOW)
+
+def adjDn():
+    delay = 0.005
+    steps = 6
+    GPIO.output(DIR, CW)
     for x in range(steps):
-        GPIO.output(DIR, CW)
+        Timer(delay, stepHigh).start()
+        
+def stepCw(steps):
+    #delay = 0.005
+    print(f"steps cw {steps} delay {delay}")
+    GPIO.output(DIR, CW)
+    for x in range(steps):
+        #Timer(delay, stepHigh).start()
         GPIO.output(STEP, GPIO.HIGH)
         sleep(delay)
         GPIO.output(STEP, GPIO.LOW)
         sleep(delay)
 
 def stepCcw(steps):
+    #delay = 0.005
+    print(f"steps ccw {steps} delay {delay}")
+    GPIO.output(DIR, CCW)
     for x in range(steps):
-        GPIO.output(DIR, CCW)
+        #Timer(delay, stepHigh).start()
+        
         GPIO.output(STEP, GPIO.HIGH)
         sleep(delay)
         GPIO.output(STEP, GPIO.LOW)
