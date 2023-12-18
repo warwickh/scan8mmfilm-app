@@ -183,7 +183,7 @@ class Frame:
     ScaleFactor = 1.0 # overwritten by initScaleFactor()
     outerThresh = 0.65
     innerThresh = 0.3
-    s8_template = [60,155,60]
+    s8_template = [60,160,60]
     r8_template = [60,155,60]
 
     def initScaleFactor():
@@ -319,7 +319,7 @@ class Frame:
         innerThreshold = Frame.innerThresh*maxPeakValue
         outerLow       = y1
         peaks = []
-        gap_thresh = 10*Frame.ScaleFactor #How close to template values at scaled
+        gap_thresh = 20*Frame.ScaleFactor #How close to template values at scaled
         for y in range(y1,y2):
             if smoothedHisto[y]<outerThreshold and smoothedHisto[y+1]>outerThreshold:
                 peaks.append(y)
