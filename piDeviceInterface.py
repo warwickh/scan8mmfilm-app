@@ -119,6 +119,10 @@ def spoolStop():
     GPIO.output(pin_forward, GPIO.LOW)
     GPIO.output(pin_backward, GPIO.LOW)
     spool_pwm.ChangeDutyCycle(0)
+    
+def stepStop():
+    print("Stepper off")
+    GPIO.output(STEPON, GPIO.LOW)
 
 def rewind():
     spool_pwm.ChangeDutyCycle(50)
