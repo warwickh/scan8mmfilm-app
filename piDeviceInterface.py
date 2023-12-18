@@ -93,10 +93,21 @@ def ledMinus():
     led_pwm.ChangeDutyCycle(led_dc)
     return led_dc
 
-def spoolFwd(time=1):
+def takeupSlack():
+    print("Take up slack")
+    GPIO.output(pin_forward, GPIO.HIGH)
+    GPIO.output(pin_backward, GPIO.LOW)
+    spool_pwm.start(10)
+    while True:
+        pint = GPIO.input(photoint)
+        if not pint:
+            spoolStop()
+            return
+
+def spoolFwd(time=0.01):
     print("Spool forward")
-    spoolTimer = Timer(time, spoolStop)
-    spoolTimer.start()
+    spoolFwdTimer = Timer(time, spoolStop)
+    spoolFwdTimer.start()
     pint = GPIO.input(photoint)
     if pint:
         GPIO.output(pin_forward, GPIO.HIGH)
@@ -105,10 +116,10 @@ def spoolFwd(time=1):
     else:
         spool_pwm.ChangeDutyCycle(0)
 
-def spoolBack(time=1):
+def spoolBack(time=0.01):
     print("Spool back")
-    spoolTimer = Timer(time, spoolStop)
-    spoolTimer.start()
+    spoolBackTimer = Timer(time, spoolStop)
+    spoolBackTimer.start()
     GPIO.output(pin_forward, GPIO.LOW)
     GPIO.output(pin_backward, GPIO.HIGH)
     spool_pwm.start(10)
@@ -118,7 +129,7 @@ def spoolStop():
     spool_pwm.ChangeDutyCycle(0)
     GPIO.output(pin_forward, GPIO.LOW)
     GPIO.output(pin_backward, GPIO.LOW)
-    spool_pwm.ChangeDutyCycle(0)
+    #spool_pwm.ChangeDutyCycle(0)
     
 def stepStop():
     print("Stepper off")
