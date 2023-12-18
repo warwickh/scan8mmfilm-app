@@ -657,6 +657,8 @@ class QThreadScan(QtCore.QThread):
         self.locateHoleResult = 0
         oldY = 0
         stuckCount = 0
+        release = True
+        pidevi.takeupSlack()
         while self.cmd == 1 :
             try:
                 #pidevi.spoolStart()
@@ -693,6 +695,7 @@ class QThreadScan(QtCore.QThread):
                 if currentcY > self.midy + tolerance:
                     #self.motorStart()
                     pidevi.spoolFwd(0.05)
+                    release = True
                     self.sigProgress.emit(f"{self.frameNo} adjusting up", self.frameNo, self.frame)
                     print(f"{currentcY} lower than {self.midy} so Moving up {abs(currentcY-self.midy)} pixels {tolstep} steps")  
                     pidevi.stepCw(tolstep)
@@ -703,7 +706,9 @@ class QThreadScan(QtCore.QThread):
                     self.sigProgress.emit(f"{self.frameNo} adjusting down", self.frameNo, self.frame)  
                     print(f"{currentcY} higher than {self.midy} so Moving down {abs(currentcY-self.midy)} pixels {tolstep} steps")
                     #self.motorStart()
-                    pidevi.spoolBack(0.01)
+                    if release:
+                        pidevi.spoolBack(0.05)
+                        release = False
                     #pidevi.adjDn()  
                     pidevi.stepCcw(tolstep)
                     sleep(.2) 
@@ -713,7 +718,8 @@ class QThreadScan(QtCore.QThread):
                     self.saveFrame() 
                     print(f"cY {currentcY} midy {self.midy} tol {tolerance} =========================================================")  
                     #self.motorStart()
-                    pidevi.spoolFwd(0.15)          
+                    pidevi.spoolFwd(0.15)
+                    release = True
                     pidevi.stepCw(self.film.stepsPrFrame)
                     self.frameNo += 1
                     adjustedY = 0
