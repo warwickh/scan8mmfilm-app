@@ -93,14 +93,14 @@ def ledMinus():
     led_pwm.ChangeDutyCycle(led_dc)
     return led_dc
 
-def takeupSlack():
-    print("Take up slack")
+def spool(dc=100):
+    #Run spool until lever is lifted for rewind or initial slack takeup
+    print("Run spool")
     GPIO.output(pin_forward, GPIO.HIGH)
     GPIO.output(pin_backward, GPIO.LOW)
-    spool_pwm.start(10)
+    spool_pwm.start(dc) #TODO may not be required
     while True:
-        pint = GPIO.input(photoint)
-        if not pint:
+        if not GPIO.input(photoint):
             spoolStop()
             return
 
@@ -135,11 +135,6 @@ def stepStop():
     print("Stepper off")
     GPIO.output(STEPON, GPIO.LOW)
 
-def rewind():
-    spool_pwm.ChangeDutyCycle(50)
-    GPIO.output(pin_forward, GPIO.HIGH)
-    GPIO.output(pin_backward, GPIO.LOW)
-
 def stepHigh():
     GPIO.output(STEP, GPIO.HIGH)
     Timer(delay, stepLow).start()
@@ -171,7 +166,6 @@ def stepCcw(steps):
     GPIO.output(DIR, CCW)
     for x in range(steps):
         #Timer(delay, stepHigh).start()
-        
         GPIO.output(STEP, GPIO.HIGH)
         sleep(delay)
         GPIO.output(STEP, GPIO.LOW)

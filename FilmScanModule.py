@@ -223,7 +223,8 @@ class Frame:
         self.cX = self.midx 
         self.cY = self.midy
         self.sprocketSize = 0    
-        
+        self.histogram = None
+        #self.histogram = cv2.imread(os.path.expanduser("~/my_cv2hist_lim.png"))
         self.locateHoleResult = 1
         #print(f"init complete {self.__dict__}")
         
@@ -248,6 +249,9 @@ class Frame:
     def getHoleCrop(self) :
         cv2.imwrite(f"./getHoleCrop.png", self.imageHoleCrop)
         return self.convert_cv_qt(self.imageHoleCrop)
+
+    def getHistogram(self):
+        return self.convert_cv_qt(self.histogram)
 
     def calcCrop(self):
         #self.locateHoleResult = self.locateSprocketHoleNew(Frame.holeMinArea)
@@ -479,6 +483,8 @@ class Frame:
         plt.xlim(y1,y2)
         #plt.show()
         plt.savefig(os.path.expanduser("~/my_cv2hist_lim.png"))
+        self.histogram = cv2.imread(os.path.expanduser("~/my_cv2hist_lim.png"))
+        self.histogram = cv2.resize(self.histogram, (200, 200))
         plt.clf()
         cv2.imwrite(os.path.expanduser("~/sprocketStrip.png"), self.imageHoleCrop)
         cv2.imwrite(os.path.expanduser("~/image.png"), self.image)

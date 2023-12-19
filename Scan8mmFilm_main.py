@@ -56,6 +56,8 @@ class Window(QMainWindow, Ui_MainWindow):
             self.comboBox.addItem(r.name)
         self.adjRectIx = 0
         self.comboBox.currentIndexChanged.connect(self.adjustableRectChanged)
+        self.dsbInner.setValue(float(Frame.innerThresh))
+        self.dsbOuter.setValue(float(Frame.outerThresh))
         self.doLblImagePrep = False
 
         QTimer.singleShot(100, self.initScanner)
@@ -78,7 +80,18 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnMakeFilm.clicked.connect(self.makeFilm)
         self.pbtnLedPlus.clicked.connect(self.ledPlus)
         self.pbtnLedMinus.clicked.connect(self.ledMinus)
-        self.pbtnRewind.clicked.connect(self.rewind)
+        self.pbtnSpool.clicked.connect(self.spool)
+        
+        self.dsbOuter.valueChanged.connect(self.outerThreshChanged)
+        self.dsbInner.valueChanged.connect(self.innerThreshChanged)
+        
+        self.pbtnX1Minus.clicked.connect(self.x1Minus)
+        self.pbtnX1Plus.clicked.connect(self.x1Plus)
+        self.pbtnX2Minus.clicked.connect(self.x2Minus)
+        self.pbtnX2Plus.clicked.connect(self.x1Plus)
+        
+        #self.lblHist.setText(_translate("MainWindow", "hist"))
+        
         self.actionExit.triggered.connect(self.doClose)
         self.actionAbout.triggered.connect(self.about)
         if  picamera2_present:
@@ -308,6 +321,15 @@ class Window(QMainWindow, Ui_MainWindow):
         self.adjRectIx = i
         self.showAdjustValues()
 
+
+    def outerThreshChanged(self):
+        Frame.innerThresh = self.dsbInner.value()
+        self.showAdjustValues()
+        
+    def innerThreshChanged(self):
+        Frame.innerThresh = self.dsbInner.value()
+        self.showAdjustValues()
+        
     def ledPlus(self):
         if self.rbtnScan.isChecked():
             if picamera2_present:
@@ -320,10 +342,41 @@ class Window(QMainWindow, Ui_MainWindow):
                 Film.led_dc = pidevi.ledMinus()
                 print(f"LED DC now {Film.led_dc}")
 
-    def rewind(self):
-        if self.rbtnCrop.isChecked():
-            if picamera2_present:
-                pidevi.rewind()
+    def x1Plus(self):
+        if self.film.format=="s8":
+            Frame.s8_holeCrop.x1+=1
+        else:
+            Frame.r8_holeCrop.x1+=1
+        self.refreshFrame()
+        self.showAdjustValues()
+
+    def x1Minus(self):
+        if self.film.format=="s8":
+            Frame.s8_holeCrop.x1-=1
+        else:
+            Frame.r8_holeCrop.x1-=1
+        self.refreshFrame()
+        self.showAdjustValues()
+                
+    def x2Plus(self):
+        if self.film.format=="s8":
+            Frame.s8_holeCrop.x2+=1
+        else:
+            Frame.r8_holeCrop.x2+=1
+        self.refreshFrame()
+        self.showAdjustValues()
+                
+    def x2Minus(self):
+        if self.film.format=="s8":
+            Frame.s8_holeCrop.x2-=1
+        else:
+            Frame.r8_holeCrop.x2-=1
+        self.refreshFrame()
+        self.showAdjustValues()
+    
+    def spool(self):
+        if picamera2_present:
+            pidevi.spool()
             
     # Process or timer actions ---------------------------------------------------------------------------------------------------------
 
@@ -354,6 +407,7 @@ class Window(QMainWindow, Ui_MainWindow):
             if self.lblImage.isVisible():
                 self.lblImage.setPixmap(frame.getCropped())
             self.lblHoleCrop.setPixmap(frame.getHoleCrop())
+            self.lblHist.setPixmap(self.frame.getHistogram())
             self.frame = frame
 
     def cropProgress(self, info, i, frame):
@@ -362,6 +416,7 @@ class Window(QMainWindow, Ui_MainWindow):
             if self.lblImage.isVisible():
                 self.lblImage.setPixmap(frame.getCropped())
             self.lblHoleCrop.setPixmap(frame.getHoleCrop())
+            #self.lblHist.setPixmap(self.frame.getHistogram())
             self.frame = frame
 
     def cropStateChange(self, info, res):
@@ -432,7 +487,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         self.pbtnLedPlus.setEnabled(scan)
         self.pbtnLedMinus.setEnabled(scan)
-        self.pbtnRewind.setEnabled(pi and (crop or scan))
+        self.pbtnSpool.setEnabled(pi and (crop or scan))
 
     # Shared GUI update methods ---------------------------------------------------------------------------------------------------------------------------     
 
@@ -521,6 +576,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.prepLblImage()
         self.lblImage.setPixmap(self.frame.getCropOutline(self.scrollAreaWidgetContents) )
         self.lblHoleCrop.setPixmap(self.frame.getHoleCrop())
+        if self.frame.histogram is not None:
+            self.lblHist.setPixmap(self.frame.getHistogram())
     
     def showInfo(self,text):
         self.statusbar.showMessage(text)
@@ -667,7 +724,6 @@ class QThreadScan(QtCore.QThread):
                 image = picam2.switch_mode_and_capture_array(capture_config, "main") #, signal_function=self.qpicamera2.signal_done)
                 self.frame = Frame(image=image)
                 locateHoleResult = self.frame.locateSprocketHoleNew()#Frame.holeMinArea)
-                
                 print("cY",self.frame.cY ,"oldY", oldY, "locateHoleResult", locateHoleResult,"cmd",self.cmd,"sprocketsize",self.frame.sprocketSize)
                 
                 if locateHoleResult != 0 :
@@ -746,20 +802,23 @@ class QThreadScan(QtCore.QThread):
 # =============================================================================
 
 if __name__ == "__main__":
-    #app = QApplication(sys.argv) 
-    #win = Window()
-    #win.show()
-    #sys.exit(app.exec())
-    try:
-        
+    safe = False
+    if safe:
+        try:
+            
+            app = QApplication(sys.argv) 
+            win = Window()
+            if  picamera2_present:
+                picam2.start()
+            win.show()
+            sys.exit(app.exec())
+        except:
+            if  picamera2_present:
+                pidevi.cleanup()
+    else:
         app = QApplication(sys.argv) 
         win = Window()
-        if  picamera2_present:
-            picam2.start()
         win.show()
         sys.exit(app.exec())
-    except:
-        if  picamera2_present:
-            pidevi.cleanup()
     Ini.saveConfig()
     sys.exit(0)
