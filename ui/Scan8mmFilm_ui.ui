@@ -525,9 +525,9 @@
               </widget>
              </item>
              <item>
-              <widget class="QPushButton" name="pbtnX1Plus">
+              <widget class="QPushButton" name="pbtnX2Minus">
                <property name="text">
-                <string>x1&gt;</string>
+                <string>x2&lt;</string>
                </property>
               </widget>
              </item>
@@ -536,9 +536,9 @@
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_7">
              <item>
-              <widget class="QPushButton" name="pbtnX2Minus">
+              <widget class="QPushButton" name="pbtnX1Plus">
                <property name="text">
-                <string>x2&lt;</string>
+                <string>x1&gt;</string>
                </property>
               </widget>
              </item>
@@ -546,6 +546,24 @@
               <widget class="QPushButton" name="pbtnX2Plus">
                <property name="text">
                 <string>x2&gt;</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_10">
+             <item>
+              <widget class="QLabel" name="lblX1">
+               <property name="text">
+                <string>x1</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="lblX2">
+               <property name="text">
+                <string>x2</string>
                </property>
               </widget>
              </item>
