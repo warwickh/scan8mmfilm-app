@@ -49,6 +49,8 @@ class Window(QMainWindow, Ui_MainWindow):
             # self.qpicamera2 = QGlPicamera2(picam2, width=3280, height=2464, keep_ar=True)
             self.qpicamera2 = QGlPicamera2(picam2, width=800, height=600, keep_ar=True)
             self.horizontalLayout_4.addWidget(self.qpicamera2)
+        self.dsbInner.setValue(float(Frame.innerThresh))
+        self.dsbOuter.setValue(float(Frame.outerThresh))
         self.connectSignalsSlots()
         self.lblHoleCrop.setMinimumWidth(Frame.getHoleCropWidth())
         self.adjustableRects = getAdjustableRects()
@@ -63,10 +65,6 @@ class Window(QMainWindow, Ui_MainWindow):
         QTimer.singleShot(100, self.initScanner)
 
     def connectSignalsSlots(self):
-        #if picamera2_present:
-        #    self.chkRewind.toggled.connect(self.rewindChanged)
-        #else:
-        #    self.chkRewind.setDisabled(True)
         self.pbtnStart.clicked.connect(self.start)
         self.pbtnStop.clicked.connect(self.stop)
         self.pbtnUp.clicked.connect(self.up)
@@ -81,17 +79,12 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnLedPlus.clicked.connect(self.ledPlus)
         self.pbtnLedMinus.clicked.connect(self.ledMinus)
         self.pbtnSpool.clicked.connect(self.spool)
-        
         self.dsbOuter.valueChanged.connect(self.outerThreshChanged)
         self.dsbInner.valueChanged.connect(self.innerThreshChanged)
-        
         self.pbtnX1Minus.clicked.connect(self.x1Minus)
         self.pbtnX1Plus.clicked.connect(self.x1Plus)
         self.pbtnX2Minus.clicked.connect(self.x2Minus)
         self.pbtnX2Plus.clicked.connect(self.x1Plus)
-        
-        #self.lblHist.setText(_translate("MainWindow", "hist"))
-        
         self.actionExit.triggered.connect(self.doClose)
         self.actionAbout.triggered.connect(self.about)
         if  picamera2_present:
@@ -324,10 +317,12 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def outerThreshChanged(self):
         Frame.innerThresh = self.dsbInner.value()
+        self.refreshFrame()
         self.showAdjustValues()
         
     def innerThreshChanged(self):
         Frame.innerThresh = self.dsbInner.value()
+        self.refreshFrame()
         self.showAdjustValues()
         
     def ledPlus(self):
@@ -407,7 +402,7 @@ class Window(QMainWindow, Ui_MainWindow):
             if self.lblImage.isVisible():
                 self.lblImage.setPixmap(frame.getCropped())
             self.lblHoleCrop.setPixmap(frame.getHoleCrop())
-            self.lblHist.setPixmap(self.frame.getHistogram())
+            self.lblHist.setPixmap(cv2.resize(frame.getHistogram(),self.lblHist.size))
             self.frame = frame
 
     def cropProgress(self, info, i, frame):
@@ -484,7 +479,12 @@ class Window(QMainWindow, Ui_MainWindow):
         self.comboBox.setEnabled(idle and crop and frame)
         self.rbtnPosition.setEnabled(idle and crop and frame)
         self.rbtnSize.setEnabled(idle and crop and frame)
-
+        self.pbtnX1Minus.setEnabled(frame)
+        self.pbtnX1Plus.setEnabled(frame)
+        self.pbtnX2Minus.setEnabled(frame)
+        self.pbtnX2Plus.setEnabled(frame)
+        self.dsbOuter.setEnabled(frame)
+        self.dsbInner.setEnabled(frame)
         self.pbtnLedPlus.setEnabled(scan)
         self.pbtnLedMinus.setEnabled(scan)
         self.pbtnSpool.setEnabled(pi and (crop or scan))
@@ -715,7 +715,7 @@ class QThreadScan(QtCore.QThread):
         oldY = 0
         stuckCount = 0
         release = True
-        pidevi.takeupSlack()
+        pidevi.spool()
         while self.cmd == 1 :
             try:
                 #pidevi.spoolStart()
@@ -802,7 +802,7 @@ class QThreadScan(QtCore.QThread):
 # =============================================================================
 
 if __name__ == "__main__":
-    safe = False
+    safe = True#False
     if safe:
         try:
             
@@ -820,5 +820,7 @@ if __name__ == "__main__":
         win = Window()
         win.show()
         sys.exit(app.exec())
+        if  picamera2_present:
+                pidevi.cleanup()
     Ini.saveConfig()
     sys.exit(0)

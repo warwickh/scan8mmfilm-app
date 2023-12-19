@@ -388,7 +388,7 @@ class Ui_MainWindow(object):
         self.pbtnX1Plus.setText(_translate("MainWindow", "x1>"))
         self.pbtnX2Minus.setText(_translate("MainWindow", "x2<"))
         self.pbtnX2Plus.setText(_translate("MainWindow", "x2>"))
-        self.lblHist.setText(_translate("MainWindow", "hist"))
+        self.lblHist.setText(_translate("MainWindow", ""))
         self.edlFilmName.setPlaceholderText(_translate("MainWindow", "<Enter film name>"))
         self.menuMain.setTitle(_translate("MainWindow", "Main"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
