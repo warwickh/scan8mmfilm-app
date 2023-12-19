@@ -637,7 +637,7 @@ class Film:
         self.progressReport = progressReport
         self.filmDone = filmDone
         os.chdir(Film.cropFolder)
-        filmPathName = os.path.join(Film.filmFolder, filmName) + '.mp4'
+        filmPathName = os.path.join(Film.filmFolder, filmName) + '.avi'#'.mp4'
         if os.path.isfile(filmPathName):
             os.remove(filmPathName)
         
