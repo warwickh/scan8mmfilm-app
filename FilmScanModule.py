@@ -185,6 +185,7 @@ class Frame:
     innerThresh = 0.3
     s8_template = [60,160,60]
     r8_template = [60,155,60]
+    hist_path = os.path.expanduser("~/my_cv2hist_lim.png")
 
     def initScaleFactor():
         Frame.ScaleFactor = Camera.ViewWidth/640.0 
@@ -251,6 +252,8 @@ class Frame:
         return self.convert_cv_qt(self.imageHoleCrop)
 
     def getHistogram(self):
+        self.histogram = cv2.imread(Frame.hist_path)
+        self.histogram = cv2.resize(self.histogram, (200, 200))
         return self.convert_cv_qt(self.histogram)
 
     def calcCrop(self):
@@ -412,6 +415,7 @@ class Frame:
             locateHoleResult = 2
         else:
             print(f"Why am I here with sprocketSize {sprocketSize}")
+            print(f"probably not enough peaks found {len(peaks)}")
             cY = dy//2
             sprocketSize   = 0
             locateHoleResult = 1
@@ -482,9 +486,8 @@ class Frame:
         plt.savefig(os.path.expanduser("~/my_cv2hist.png"))
         plt.xlim(y1,y2)
         #plt.show()
-        plt.savefig(os.path.expanduser("~/my_cv2hist_lim.png"))
-        self.histogram = cv2.imread(os.path.expanduser("~/my_cv2hist_lim.png"))
-        self.histogram = cv2.resize(self.histogram, (200, 200))
+        plt.savefig(Frame.hist_path)#os.path.expanduser("~/my_cv2hist_lim.png"))
+        #self.histogram = cv2.imread(os.path.expanduser("~/my_cv2hist_lim.png"))
         plt.clf()
         cv2.imwrite(os.path.expanduser("~/sprocketStrip.png"), self.imageHoleCrop)
         cv2.imwrite(os.path.expanduser("~/image.png"), self.image)
