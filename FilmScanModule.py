@@ -315,15 +315,21 @@ class Frame:
         histogram     = np.mean(sprocketEdges,axis=(1,2))
         smoothedHisto = cv2.GaussianBlur(histogram,(1,filterSize),0)
         maxPeakValue   = smoothedHisto[y1:y2].max()
+        minPeakValue   = smoothedHisto[y1:y2].min()
         outerThreshold = Frame.outerThresh*maxPeakValue
         innerThreshold = Frame.innerThresh*maxPeakValue
+        #troughThreshold = 1.5*max(minPeakValue, 10) #try to find min values but not zero
         outerLow       = y1
         peaks = []
+        trough = None
         gap_thresh = 20*Frame.ScaleFactor #How close to template values at scaled
         for y in range(y1,y2):
             if smoothedHisto[y]<outerThreshold and smoothedHisto[y+1]>outerThreshold:
                 peaks.append(y)
+            if smoothedHisto[y]==minPeakValue:
+                trough=y
         print(f"Peaks {peaks} midy {midy}")
+        print(f"Trough {trough}")
         print(f"Template {template[0]} {template[1]} {template[2]}")
         #Find a range containing a sprocket closest to centre by comparing sprocket/not sprocket gaps with template
         #Try forward first. Backwards may be necessary if less peaks are detected
@@ -375,6 +381,7 @@ class Frame:
             #searchCenter = dy//2
             searchCenter = int(outerLow + (0.5*self.minSprocketSize)) #give priority to top frame. Try to find internal location - probably can change to outerhigh-outerlow
             searchCenter = int(outerHigh - (0.5*self.minSprocketSize)) #give priority to top frame. Try to find internal location - probably can change to outerhigh-outerlow
+            searchCenter = int(trough)
             print(f"Between 2 frames, using bottom. Searching from {searchCenter}")
         innerLow = searchCenter
         for y in range(searchCenter,outerLow,-1):
@@ -465,17 +472,18 @@ class Frame:
         plt.axvline(outerLow, color='gray', linewidth=1)
         plt.axhline(innerThreshold, color='cyan', linewidth=1)
         plt.axhline(outerThreshold, color='olive', linewidth=1)
+        plt.axvline(trough, color='pink', linewidth=1)
         plt.xlim([0, dy])
         #plt.show()
-        plt.savefig("./my_cv2hist.png")
+        plt.savefig(os.path.expanduser("~/my_cv2hist.png"))
         plt.xlim(y1,y2)
         #plt.show()
-        plt.savefig("./my_cv2hist_lim.png")
+        plt.savefig(os.path.expanduser("~/my_cv2hist_lim.png"))
         plt.clf()
-        cv2.imwrite(f"./sprocketStrip.png", self.imageHoleCrop)
-        cv2.imwrite(f"./image.png", self.image)
+        cv2.imwrite(os.path.expanduser("~/sprocketStrip.png"), self.imageHoleCrop)
+        cv2.imwrite(os.path.expanduser("~/image.png"), self.image)
         if locatedX:
-            cv2.imwrite(f"./horizontalStrip.png", horizontalStrip)
+            cv2.imwrite(os.path.expanduser("~/horizontalStrip.png"), horizontalStrip)
            
         self.locateHoleResult = locateHoleResult
         return locateHoleResult
