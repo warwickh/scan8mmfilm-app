@@ -340,32 +340,40 @@ class Window(QMainWindow, Ui_MainWindow):
     def x1Plus(self):
         if self.film.format=="s8":
             Frame.s8_holeCrop.x1+=1
+            self.lblX1.setText(str(Frame.s8_holeCrop.x1))
         else:
             Frame.r8_holeCrop.x1+=1
+            self.lblX2.setText(str(Frame.r8_holeCrop.x1))
         self.refreshFrame()
         self.showAdjustValues()
 
     def x1Minus(self):
         if self.film.format=="s8":
             Frame.s8_holeCrop.x1-=1
+            self.lblX1.setText(str(Frame.s8_holeCrop.x1))
         else:
             Frame.r8_holeCrop.x1-=1
+            self.lblX1.setText(str(Frame.r8_holeCrop.x1))
         self.refreshFrame()
         self.showAdjustValues()
                 
     def x2Plus(self):
         if self.film.format=="s8":
             Frame.s8_holeCrop.x2+=1
+            self.lblX2.setText(str(Frame.s8_holeCrop.x2))
         else:
             Frame.r8_holeCrop.x2+=1
+            self.lblX2.setText(str(Frame.r8_holeCrop.x2))
         self.refreshFrame()
         self.showAdjustValues()
                 
     def x2Minus(self):
         if self.film.format=="s8":
             Frame.s8_holeCrop.x2-=1
+            self.lblX2.setText(str(Frame.s8_holeCrop.x2))
         else:
             Frame.r8_holeCrop.x2-=1
+            self.lblX2.setText(str(Frame.r8_holeCrop.x2))
         self.refreshFrame()
         self.showAdjustValues()
     
@@ -522,7 +530,12 @@ class Window(QMainWindow, Ui_MainWindow):
             else:
                 self.rbtnCrop.setChecked(True) 
         self.enableButtons(busy=False)
-
+        if self.film.format=="s8":
+            self.lblX1.setText(str(Frame.s8_holeCrop.x1))
+            self.lblX2.setText(str(Frame.s8_holeCrop.x2))
+        else:
+            self.lblX1.setText(str(Frame.r8_holeCrop.x1))
+            self.lblX2.setText(str(Frame.r8_holeCrop.x2))
 
     def updateInfoPanel(self):
         self.lblCropInfo.setText(f"Cropped frame count {Film.getCropCount()}")
@@ -534,7 +547,6 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.lblScanFrame.setText(Film.scanFolder)
             else:
                 self.lblScanFrame.setText(self.frame.imagePathName)       
-                    
             self.lblInfo1.setText(f"cX={frame.cX} cY={frame.cY} midy={frame.midy} led={Film.led_dc}")
             if frame.sprocketSize is not None:
                 self.lblInfo2.setText(f"res={frame.locateHoleResult} sprocketSize={frame.sprocketSize}")
