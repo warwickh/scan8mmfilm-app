@@ -256,13 +256,16 @@ class Frame:
         return self.convert_cv_qt(self.imageHoleCrop)
 
     def getHistogram(self):
+        width = 200
         self.histogram = cv2.imread(Frame.hist_path)
+        y,x,_ = self.histogram.shape
+        scale = 200/y
         #self.histogram = cv2.resize(self.histogram, (200, 200))
-        return self.convert_cv_qt(self.histogram)
+        return self.convert_cv_qt(cv2.resize(self.histogram, (0,0), fx=scale, fy=scale))
 
     def calcCrop(self):
-        #self.locateHoleResult = self.locateSprocketHoleNew(Frame.holeMinArea)
-        self.locateHoleResult = self.locateSprocketHoleNew()
+        #self.locateHoleResult = self.locateSprocketHole(Frame.holeMinArea)
+        self.locateHoleResult = self.locateSprocketHole()
         print(f"Calc crop self.cY {self.cY} + Frame.holeCrop.y1 {self.holeCrop.y1} = self.cY + Frame.holeCrop.y1 {self.cY + self.holeCrop.y1}")
         print(f"Frame.ScaleFactor {self.ScaleFactor}")
         print(f"Frame.frameCrop.y1 {self.frameCrop.y1}")
@@ -304,8 +307,8 @@ class Frame:
     # Added initial range check
     # Return values:
     # 0: hole found, 1: hole not found, 2: hole to large, 3: no center
-    def locateSprocketHoleNew(self):
-        print(f"locateSprocketHoleNew {self.image.shape}")
+    def locateSprocketHole(self):
+        print(f"locateSprocketHole {self.image.shape}")
         #thresholds = [0.5,0.3]          # edge thresholds; first one higher, second one lower
         filterSize = 25                 # smoothing kernel - leave it untouched
         #print(f"Check Frame.holeCrop.y1 {Frame.holeCrop.y1} Frame.holeCrop.y2 {Frame.holeCrop.y2}")
@@ -328,17 +331,21 @@ class Frame:
         minPeakValue   = smoothedHisto[y1:y2].min()
         outerThreshold = Frame.outerThresh*maxPeakValue
         innerThreshold = Frame.innerThresh*maxPeakValue
-        #troughThreshold = 1.5*max(minPeakValue, 10) #try to find min values but not zero
-        outerLow       = y1
+        outerLow = y1
         peaks = []
         trough = None
-        gap_thresh = 20*Frame.ScaleFactor #How close to template values at scaled
-        for y in range(y1,y2):
-            if smoothedHisto[y]<outerThreshold and smoothedHisto[y+1]>outerThreshold:
-                peaks.append(y)
-            if smoothedHisto[y]==minPeakValue:
-                trough=y
-        print(f"Peaks {peaks} midy {midy}")
+        #thresh_vals = [outerThreshold+10, outerThreshold+5, outerThreshold, outerThreshold-5, outerThreshold-10]
+        thresh_vals = [outerThreshold, outerThreshold-5, outerThreshold+5]
+        print(f"Thresh vals {thresh_vals}")
+        for z in thresh_vals:
+            for y in range(y1,y2):
+                if smoothedHisto[y]<z and smoothedHisto[y+1]>z:
+                    peaks.append(y)
+                if smoothedHisto[y]==minPeakValue:
+                    trough=y
+            if len(peaks)>2 and len(peaks)<5:
+                print(f"Got enough peaks {peaks} {len(peaks)} at {z} midy {midy}")
+                break
         print(f"Trough {trough}")
         #Find a range containing a sprocket closest to centre by comparing sprocket/not sprocket gaps with ratio
         #detected sprocket must be within 0.3 of the frame
@@ -458,8 +465,6 @@ class Frame:
         
         self.imageHoleCrop = cv2.resize(self.imageHoleCrop, (0,0), fx=1/self.ScaleFactor, fy=1/self.ScaleFactor)
 
-
-
         plt.plot(smoothedHisto)
         plt.axvline(cY, color='blue', linewidth=1)
         plt.axvline(searchCenter, color='orange', linewidth=1)
@@ -472,8 +477,8 @@ class Frame:
         plt.axvline(trough, color='pink', linewidth=1)
         plt.xlim([0, dy])
         #plt.show()
-        plt.savefig(os.path.expanduser("~/my_cv2hist.png"))
         plt.xlim(y1,y2)
+        plt.savefig(os.path.expanduser("~/my_cv2hist.png"))
         #plt.show()
         plt.savefig(Frame.hist_path)#os.path.expanduser("~/my_cv2hist_lim.png"))
         #self.histogram = cv2.imread(os.path.expanduser("~/my_cv2hist_lim.png"))

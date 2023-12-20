@@ -397,6 +397,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.frame = Frame(image=image)
         self.frame.calcCrop()
         self.lblHoleCrop.setPixmap(self.frame.getHoleCrop())
+        #self.lblHist.setPixmap(cv2.resize(self.frame.getHistogram(), (0,0), fx=0.5, fy=0.5))
+        self.lblHist.setPixmap(self.frame.getHistogram())
         self.updateInfoPanel()
         self.motorTicks = 0   
         if self.scanDone :
@@ -409,8 +411,9 @@ class Window(QMainWindow, Ui_MainWindow):
             if self.lblImage.isVisible():
                 self.lblImage.setPixmap(frame.getCropped())
             self.lblHoleCrop.setPixmap(frame.getHoleCrop())
-            print(f"Resizing hist to {self.lblHist.size}")
-            self.lblHist.setPixmap(cv2.resize(frame.getHistogram(),self.lblHist.size))
+            self.lblHist.setPixmap(frame.getHistogram())
+            #print(f"Resizing hist to {self.lblHist.size}")
+            #self.lblHist.setPixmap(cv2.resize(frame.getHistogram(), (0,0), fx=0.5, fy=0.5))
             self.frame = frame
 
     def cropProgress(self, info, i, frame):
@@ -419,7 +422,7 @@ class Window(QMainWindow, Ui_MainWindow):
             if self.lblImage.isVisible():
                 self.lblImage.setPixmap(frame.getCropped())
             self.lblHoleCrop.setPixmap(frame.getHoleCrop())
-            #self.lblHist.setPixmap(self.frame.getHistogram())
+            self.lblHist.setPixmap(frame.getHistogram())
             self.frame = frame
 
     def cropStateChange(self, info, res):
@@ -590,7 +593,9 @@ class Window(QMainWindow, Ui_MainWindow):
         self.prepLblImage()
         self.lblImage.setPixmap(self.frame.getCropOutline(self.scrollAreaWidgetContents) )
         self.lblHoleCrop.setPixmap(self.frame.getHoleCrop())
-    
+        #if self.frame.histogram is not None:
+        self.lblHist.setPixmap(self.frame.getHistogram())
+
     def showInfo(self,text):
         self.statusbar.showMessage(text)
 
@@ -735,7 +740,7 @@ class QThreadScan(QtCore.QThread):
                 capture_config = picam2.create_still_configuration(main={"format": "RGB888","size": (Camera.ViewWidth, Camera.ViewHeight)},transform=Transform(vflip=True,hflip=True))
                 image = picam2.switch_mode_and_capture_array(capture_config, "main") #, signal_function=self.qpicamera2.signal_done)
                 self.frame = Frame(image=image)
-                locateHoleResult = self.frame.locateSprocketHoleNew()#Frame.holeMinArea)
+                locateHoleResult = self.frame.locateSprocketHole()#Frame.holeMinArea)
                 print("cY",self.frame.cY ,"oldY", oldY, "locateHoleResult", locateHoleResult,"cmd",self.cmd,"sprocketsize",self.frame.sprocketSize)
                 
                 if locateHoleResult != 0 :
