@@ -48,10 +48,12 @@ class Ini:
             Frame.innerThresh = config[Ini.frame].getfloat('innerThresh')
             Frame.s8_minSprocketSize = config[Ini.frame].getint('s8_minSprocketSize')
             Frame.s8_maxSprocketSize = config[Ini.frame].getint('s8_maxSprocketSize')
+            Frame.s8_ratio = config[Ini.frame].getfloat('s8_ratio')
             Frame.s8_midx = config[Ini.frame].getint('s8_midx')
             Frame.s8_midy = config[Ini.frame].getint('s8_midy')
             Frame.r8_minSprocketSize = config[Ini.frame].getint('r8_minSprocketSize')
             Frame.r8_maxSprocketSize = config[Ini.frame].getint('r8_maxSprocketSize')
+            Frame.r8_ratio = config[Ini.frame].getfloat('r8_ratio')
             Frame.r8_midx = config[Ini.frame].getint('r8_midx')
             Frame.r8_midy = config[Ini.frame].getint('r8_midy')
             Frame.s8_frameCrop.load(config)
@@ -94,10 +96,12 @@ class Ini:
         config[Ini.frame]['innerThresh'] = str(Frame.innerThresh)
         config[Ini.frame]['s8_minSprocketSize'] = str(Frame.s8_minSprocketSize)
         config[Ini.frame]['s8_maxSprocketSize'] = str(Frame.s8_maxSprocketSize)
+        config[Ini.frame]['s8_ratio'] = str(Frame.s8_ratio)
         config[Ini.frame]['s8_midx'] = str(Frame.s8_midx)
         config[Ini.frame]['s8_midy'] = str(Frame.s8_midy)
         config[Ini.frame]['r8_minSprocketSize'] = str(Frame.r8_minSprocketSize)
         config[Ini.frame]['r8_maxSprocketSize'] = str(Frame.r8_maxSprocketSize)
+        config[Ini.frame]['r8_ratio'] = str(Frame.r8_ratio)
         config[Ini.frame]['r8_midx'] = str(Frame.r8_midx)
         config[Ini.frame]['r8_midy'] = str(Frame.r8_midy)
 
@@ -117,7 +121,7 @@ def getAdjustableRects():
     
 class Camera:
     ViewWidth = 3280#1640
-    ViewHeight = 1464#1232
+    ViewHeight = 2464#1232
 
 class Rect:
     def __init__(self, name, x1, y1, x2, y2):
@@ -171,7 +175,7 @@ class Frame:
     s8_frameCrop = Rect("s8_frame_crop", 2, -107, 2+1453, 1040-107)
     s8_holeCrop = Rect("s8_hole_crop", 75, 0, 110, 2463) 
     s8_minSprocketSize = 40
-    s8_maxSprocketSize = 58
+    s8_maxSprocketSize = 65
     s8_midx = 64
     s8_midy = 240
     r8_frameCrop = Rect("r8_frame_crop", 146, 28, 146+814, 28+565)
@@ -183,8 +187,8 @@ class Frame:
     ScaleFactor = 1.0 # overwritten by initScaleFactor()
     outerThresh = 0.65
     innerThresh = 0.3
-    s8_template = [60,160,60]
-    r8_template = [60,155,60]
+    s8_ratio = (4.23-1.143)/1.143 #gap/sprocket width
+    r8_ratio = (4.23-1.27)/1.143 #gap/sprocket width
     hist_path = os.path.expanduser("~/my_cv2hist_lim.png")
 
     def initScaleFactor():
@@ -212,13 +216,13 @@ class Frame:
             self.maxSprocketSize = Frame.s8_maxSprocketSize*self.ScaleFactor
             self.holeCrop = Rect("hole_crop", Frame.s8_holeCrop.x1*self.ScaleFactor, 0, Frame.s8_holeCrop.x2*self.ScaleFactor, self.dy-1)
             self.frameCrop = Frame.s8_frameCrop
-            self.template = Frame.s8_template
+            self.ratio = Frame.s8_ratio
         else:
             self.minSprocketSize = Frame.r8_minSprocketSize*self.ScaleFactor
             self.maxSprocketSize = Frame.r8_maxSprocketSize*self.ScaleFactor
             self.holeCrop = Rect("hole_crop", Frame.r8_holeCrop.x1*self.ScaleFactor, 0, Frame.r8_holeCrop.x2*self.ScaleFactor, self.dy-1)
             self.frameCrop = Frame.r8_frameCrop
-            self.template = Frame.r8_template
+            self.ratio = Frame.r8_ratio
         self.midx = 115*self.ScaleFactor   # always overwitten 
         self.midy = self.dy//2#240*self.ScaleFactor 
         self.cX = self.midx 
@@ -248,12 +252,12 @@ class Frame:
         return self.convert_cv_qt(self.imageCropped, dest)
         
     def getHoleCrop(self) :
-        cv2.imwrite(f"./getHoleCrop.png", self.imageHoleCrop)
+        cv2.imwrite(os.path.expanduser("~/getHoleCrop.png"), self.imageHoleCrop)
         return self.convert_cv_qt(self.imageHoleCrop)
 
     def getHistogram(self):
         self.histogram = cv2.imread(Frame.hist_path)
-        self.histogram = cv2.resize(self.histogram, (200, 200))
+        #self.histogram = cv2.resize(self.histogram, (200, 200))
         return self.convert_cv_qt(self.histogram)
 
     def calcCrop(self):
@@ -309,7 +313,6 @@ class Frame:
         dy = self.dy
         y1 = self.holeCrop.y1
         y2 = self.holeCrop.y2
-        template = self.template
         #x1 = int(Frame.holeCrop.x1*Frame.ScaleFactor)
         #x2 = int(Frame.holeCrop.x2*Frame.ScaleFactor)
         x1 = int(self.holeCrop.x1)
@@ -337,40 +340,26 @@ class Frame:
                 trough=y
         print(f"Peaks {peaks} midy {midy}")
         print(f"Trough {trough}")
-        print(f"Template {template[0]} {template[1]} {template[2]}")
-        #Find a range containing a sprocket closest to centre by comparing sprocket/not sprocket gaps with template
-        #Try forward first. Backwards may be necessary if less peaks are detected
+        #Find a range containing a sprocket closest to centre by comparing sprocket/not sprocket gaps with ratio
         #detected sprocket must be within 0.3 of the frame
         frameLocated=False
+        sprocketStart=None
         for i in range(0,len(peaks)-2):
-            #try forwards
-            print("forwards")
-            print(f"{peaks[i+1]-peaks[i]} - {template[0]*Frame.ScaleFactor} = {peaks[i+1]-peaks[i]-(template[0]*Frame.ScaleFactor):.2f}")
-            print(f"and {peaks[i+2]-peaks[i+1]} -{template[1]*Frame.ScaleFactor} = {peaks[i+2]-peaks[i+1]-(template[1]*Frame.ScaleFactor)} ")
-            print(f"gap thresh {gap_thresh}")
-            if(abs(peaks[i+1]-peaks[i]-(template[0]*Frame.ScaleFactor))<gap_thresh) and (abs(peaks[i+2]-peaks[i+1]-(template[1]*Frame.ScaleFactor))<gap_thresh):
-                print(f"Found hole starting at {peaks[i]} which is {(midy-peaks[i])/dy:.2f} from the centre")
-                print(f"Check dist from centre {abs((midy-peaks[i])/dy):.2f}")
-                if abs((midy-peaks[i])/dy)<0.3:
-                    y1=int(peaks[i]-(1*self.maxSprocketSize))
-                    y2=int(peaks[i]+(1.5*self.maxSprocketSize))
-                    print(f"New y1 {y1} new y2 {y2}")
-                    frameLocated = True
-                    break
-        if not frameLocated:
-            for i in range(0,len(peaks)-2):
-                #try backwards
-                print("backwards")
-                print(f"{peaks[i+1]-peaks[i]} - {template[1]*Frame.ScaleFactor} = {peaks[i+1]-peaks[i]-(template[1]*Frame.ScaleFactor):.2f}")
-                print(f"and {peaks[i+2]-peaks[i+1]} -{template[0]*Frame.ScaleFactor} = {peaks[i+2]-peaks[i+1]-template[0]*Frame.ScaleFactor} ")
-                if(abs(peaks[i+1]-peaks[i]-(template[1]*Frame.ScaleFactor))<gap_thresh) and (abs(peaks[i+2]-peaks[i+1]-(template[0]*Frame.ScaleFactor))<gap_thresh):
-                    print(f"Found hole backwards starting at {peaks[i+1]} which is {(midy-peaks[i+1])/dy:.2f} from the centre")
-                    print(f"Check dist from centre {abs((midy-peaks[i+1])/dy):.2f}")
-                    if abs((midy-peaks[i+1])/dy)<0.3:
-                        y1=int(peaks[i+1]-(1*self.maxSprocketSize))
-                        y2=int(peaks[i+1]+(1.5*self.maxSprocketSize))
-                        print(f"New y1 {y1} new y2 {y2}")
-                        break
+            print(f"Ratio {self.ratio}")
+            #print(f"Ratio {(peaks[i+1]-peaks[i])/(peaks[i+2]-peaks[i+1])} {(peaks[i+2]-peaks[i+1])/(peaks[i+1]-peaks[i])} ideal {ideal_ratio}")
+            if (((peaks[i+1]-peaks[i])/(peaks[i+2]-peaks[i+1]) - self.ratio) < 0.5):
+                #print(f"Found backwards at {peaks[i+1]} using ratio which is {(midy-peaks[i+1])/dy:.2f} from the centre")
+                sprocketStart = peaks[i+1]
+            elif (((peaks[i+2]-peaks[i+1])/(peaks[i+1]-peaks[i]) - self.ratio) < 0.5):
+                sprocketStart = peaks[i]
+                #print(f"Found forwards at {peaks[i]} using ratio which is {(midy-peaks[i])/dy:.2f} from the centre")
+            print(f"Found sprocket at {sprocketStart} using ratio which is {(midy-sprocketStart)/dy:.2f} from the centre")
+            if sprocketStart and abs((midy-sprocketStart)/dy)<0.3:
+                y1=int(sprocketStart-(1*self.maxSprocketSize))
+                y2=int(sprocketStart+(1.5*self.maxSprocketSize))
+                print(f" Sprocket within range, so new y1 {y1} new y2 {y2}")
+                frameLocated = True
+                break
         #Locate sprocket in reduced range
         for y in range(y1,y2):
             if smoothedHisto[y]>outerThreshold:
@@ -386,10 +375,10 @@ class Frame:
             searchCenter = (outerHigh+outerLow)//2
         else:
             #searchCenter = dy//2
-            searchCenter = int(outerLow + (0.5*self.minSprocketSize)) #give priority to top frame. Try to find internal location - probably can change to outerhigh-outerlow
-            searchCenter = int(outerHigh - (0.5*self.minSprocketSize)) #give priority to top frame. Try to find internal location - probably can change to outerhigh-outerlow
+            #searchCenter = int(outerLow + (0.5*self.minSprocketSize)) #give priority to top frame. Try to find internal location - probably can change to outerhigh-outerlow
+            #searchCenter = int(outerHigh - (0.5*self.minSprocketSize)) #give priority to top frame. Try to find internal location - probably can change to outerhigh-outerlow
             searchCenter = int(trough)
-            print(f"Between 2 frames, using bottom. Searching from {searchCenter}")
+            print(f"Between 2 frames, using trough. Searching from {searchCenter}")
         innerLow = searchCenter
         for y in range(searchCenter,outerLow,-1):
             if smoothedHisto[y]>innerThreshold:
