@@ -390,9 +390,8 @@ class Window(QMainWindow, Ui_MainWindow):
             self.motorStop()
         
     def capture_done(self,job):
-        print("picam why4")
         image = picam2.wait(job)
-        # print("picture taken!")
+        print("picture taken!")
         sleep(0.5)
         #image = cv2.resize(image, (640, 480))
         self.frame = Frame(image=image)
@@ -410,6 +409,7 @@ class Window(QMainWindow, Ui_MainWindow):
             if self.lblImage.isVisible():
                 self.lblImage.setPixmap(frame.getCropped())
             self.lblHoleCrop.setPixmap(frame.getHoleCrop())
+            print(f"Resizing hist to {self.lblHist.size}")
             self.lblHist.setPixmap(cv2.resize(frame.getHistogram(),self.lblHist.size))
             self.frame = frame
 
@@ -583,13 +583,13 @@ class Window(QMainWindow, Ui_MainWindow):
             self.prepLblImage()
             self.lblImage.setPixmap(self.frame.getQPixmap(self.scrollAreaWidgetContents) )
         self.lblHoleCrop.update()
+        if self.frame.histogram is not None:
+            self.lblHist.setPixmap(self.frame.getHistogram())
         
     def showCrop(self):
         self.prepLblImage()
         self.lblImage.setPixmap(self.frame.getCropOutline(self.scrollAreaWidgetContents) )
         self.lblHoleCrop.setPixmap(self.frame.getHoleCrop())
-        if self.frame.histogram is not None:
-            self.lblHist.setPixmap(self.frame.getHistogram())
     
     def showInfo(self,text):
         self.statusbar.showMessage(text)
