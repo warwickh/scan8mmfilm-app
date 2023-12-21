@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from multiprocessing import Pool as ProcessPool
 
 dbg = 0
 
@@ -31,7 +32,7 @@ class Ini:
             Film.filmFolder = config[Ini.paths]['film_folder']
             Film.scanFolder = config[Ini.paths]['scan_folder']
             Film.cropFolder = config[Ini.paths]['crop_folder']
-
+            print(f"{Film.scanFolder}")
             Camera.ViewWidth = config[Ini.camera].getint('view_width')
             Camera.ViewHeight = config[Ini.camera].getint('view_height')
 
@@ -153,21 +154,21 @@ class Rect:
     
     def adjX(self, adj):
         #if self.x1 + adj >= 0 :
-        self.x1 = self.x1 + adj
-        self.x2 = self.x2 + adj
+        self.x1 = int(self.x1 + adj)
+        self.x2 = int(self.x2 + adj)
 
     def adjY(self, adj):
         #if self.y1 + adj >= 0 :
-        self.y1 = self.y1 + adj
-        self.y2 = self.y2 + adj
+        self.y1 = int(self.y1 + adj)
+        self.y2 = int(self.y2 + adj)
         
     def adjXSize(self, adj):
         if self.x2 + adj > self.x1 :
-            self.x2 = self.x2 + adj
+            self.x2 = int(self.x2 + adj)
     
     def adjYSize(self, adj):
         if self.y2 + adj > self.y1 :
-            self.y2 = self.y2 + adj 
+            self.y2 = int(self.y2 + adj) 
 
 class Frame:
 
@@ -636,20 +637,34 @@ class Film:
             self.curFrameNo = -1
             return None   
 
+    def cropFrame(self, fileName):
+            print(f" instance path {self.scanFolder}")
+            print(f" instance path crop {self.cropFolder}")
+            scanFolder = "C:\\Users\\F98044d\\Downloads\\dup_test" #temporary TODO
+            cropFolder = "C:\\Users\\F98044d\\Downloads\\crop_test" #temporary TODO
+            print(f"Cropping {fileName} from {scanFolder}")
+            frame = Frame(os.path.join(scanFolder, fileName))
+            frame.cropPic()
+            outName = fileName.replace("scan","frame")
+            cv2.imwrite(os.path.join(cropFolder, outName), frame.imageCropped)
+
     def cropAll(self, progress) :
         frameNo = 0
         os.chdir(Film.scanFolder)
         fileList = sorted(glob.glob('*.jpg'))
         self.scanFileCount = len(fileList)
-        for fn in fileList:
-            frame = Frame(os.path.join(Film.scanFolder, fn))
-            frame.cropPic()
-            cv2.imwrite(os.path.join(Film.cropFolder, f"frame{frameNo:06}.jpg"), frame.imageCropped)
-            self.curFrameNo = frameNo
-            if progress is not None:
-                if progress(frame) == 0:
-                    break
-            frameNo = frameNo+1
+        with ProcessPool(processes=os.cpu_count()) as pool:
+            pool.map(self.cropFrame, fileList)
+        #for fn in fileList:
+        #    self.cropFrame(fn, frameNo)
+            #frame = Frame(os.path.join(Film.scanFolder, fn))
+            #frame.cropPic()
+            #cv2.imwrite(os.path.join(Film.cropFolder, f"frame{frameNo:06}.jpg"), frame.imageCropped)
+            #self.curFrameNo = frameNo
+            #if progress is not None:
+            #    if progress(frame) == 0:
+            #        break
+            #frameNo = frameNo+1
                     
     def makeFilm(self, filmName, progressReport, filmDone) :
         self.progressReport = progressReport
