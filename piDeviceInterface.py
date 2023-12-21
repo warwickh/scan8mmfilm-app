@@ -45,7 +45,7 @@ rewind = 0
 spool_pwm = None
 led_pwm = None
 
-led_dc = 100
+led_dc = 50
     
 def initGpio() :
     global spool_pwm
