@@ -185,7 +185,7 @@ class Frame:
     r8_midx = 64
     r8_midy = 120
     ScaleFactor = 1.0 # overwritten by initScaleFactor()
-    outerThresh = 0.65
+    outerThresh = 0.6
     innerThresh = 0.3
     s8_ratio = (4.23-1.143)/1.143 #gap/sprocket width
     r8_ratio = (4.23-1.27)/1.143 #gap/sprocket width
@@ -320,8 +320,7 @@ class Frame:
         #x2 = int(Frame.holeCrop.x2*Frame.ScaleFactor)
         x1 = int(self.holeCrop.x1)
         x2 = int(self.holeCrop.x2)
-        print(f"x1 {x1} x2 {x2}")
-        print(f"y1 {y1} y2 {y2}")
+        print(f"x1 {x1} x2 {x2} y1 {y1} y2 {y2}")
         self.imageHoleCrop = self.image[:,int(x1):int(x1+2*(x2-x1)),:]
         self.imageHoleCropHide = self.image[:,int(x1):int(x2),:]
         sprocketEdges = np.absolute(cv2.Sobel(self.imageHoleCropHide,cv2.CV_64F,0,1,ksize=3))
@@ -332,21 +331,22 @@ class Frame:
         outerThreshold = Frame.outerThresh*maxPeakValue
         innerThreshold = Frame.innerThresh*maxPeakValue
         outerLow = y1
-        peaks = []
-        trough = None
         #thresh_vals = [outerThreshold+10, outerThreshold+5, outerThreshold, outerThreshold-5, outerThreshold-10]
         thresh_vals = [outerThreshold, outerThreshold-5, outerThreshold+5]
         print(f"Thresh vals {thresh_vals}")
         for z in thresh_vals:
+            peaks = []
+            trough = None
             for y in range(y1,y2):
                 if smoothedHisto[y]<z and smoothedHisto[y+1]>z:
                     peaks.append(y)
                 if smoothedHisto[y]==minPeakValue:
                     trough=y
+            print(f"Peaks at {z:.2f} {peaks} thresh {outerThreshold:.2f}")
             if len(peaks)>2 and len(peaks)<5:
-                print(f"Got enough peaks {peaks} {len(peaks)} at {z} midy {midy}")
+                print(f"Got enough peaks {peaks} {len(peaks)} at {z:.2f} midy {midy} thresh {outerThreshold:.2f} trough at {trough}")
                 break
-        print(f"Trough {trough}")
+        #print(f"Trough {trough}")
         #Find a range containing a sprocket closest to centre by comparing sprocket/not sprocket gaps with ratio
         #detected sprocket must be within 0.3 of the frame
         frameLocated=False
@@ -355,11 +355,11 @@ class Frame:
             print(f"Ratio {self.ratio}")
             #print(f"Ratio {(peaks[i+1]-peaks[i])/(peaks[i+2]-peaks[i+1])} {(peaks[i+2]-peaks[i+1])/(peaks[i+1]-peaks[i])} ideal {ideal_ratio}")
             if (((peaks[i+1]-peaks[i])/(peaks[i+2]-peaks[i+1]) - self.ratio) < 0.5):
-                #print(f"Found backwards at {peaks[i+1]} using ratio which is {(midy-peaks[i+1])/dy:.2f} from the centre")
                 sprocketStart = peaks[i+1]
+                print(f"Ratio Back {((peaks[i+1]-peaks[i])/(peaks[i+2]-peaks[i+1]))}")
             elif (((peaks[i+2]-peaks[i+1])/(peaks[i+1]-peaks[i]) - self.ratio) < 0.5):
                 sprocketStart = peaks[i]
-                #print(f"Found forwards at {peaks[i]} using ratio which is {(midy-peaks[i])/dy:.2f} from the centre")
+                print(f"Ratio forward {((peaks[i+2]-peaks[i+1])/(peaks[i+1]-peaks[i]))}")
             print(f"Found sprocket at {sprocketStart} using ratio which is {(midy-sprocketStart)/dy:.2f} from the centre")
             if sprocketStart and abs((midy-sprocketStart)/dy)<0.3:
                 y1=int(sprocketStart-(1*self.maxSprocketSize))
@@ -398,9 +398,9 @@ class Frame:
                 break
         sprocketSize    = innerHigh-innerLow
         #minSprocketSize = int(minSize)
-        print(f"minSprocketSize {self.minSprocketSize}<sprocketSize {sprocketSize} {self.minSprocketSize<sprocketSize}")
-        print(f"maxSprocketSize {self.maxSprocketSize}>sprocketSize {sprocketSize} {self.maxSprocketSize>sprocketSize}")
-        print(f"and sprocketSize<(outerHigh-outerLow) {sprocketSize<(outerHigh-outerLow)}")
+        #print(f"minSprocketSize {self.minSprocketSize}<sprocketSize {sprocketSize} {self.minSprocketSize<sprocketSize}")
+        #print(f"maxSprocketSize {self.maxSprocketSize}>sprocketSize {sprocketSize} {self.maxSprocketSize>sprocketSize}")
+        #print(f"and sprocketSize<(outerHigh-outerLow) {sprocketSize<(outerHigh-outerLow)}")
         if self.minSprocketSize<sprocketSize and sprocketSize<(outerHigh-outerLow) and sprocketSize<self.maxSprocketSize:
             cY = (innerHigh+innerLow)//2
             print(f"Valid sprocket size {sprocketSize}")
@@ -444,6 +444,13 @@ class Frame:
         print(f"InnerLow {innerLow} InnerHigh {innerHigh} cY {cY} cX {cX}")
         print(f"Found sprocket edge {locatedX} at {cX}")
         print("cY=", self.cY, "oldcY=", oldcY, "locateHoleResult=", locateHoleResult)
+ 
+ 
+        p1 = (int(x2-x1), 0) 
+        p2 = (int(x2-x1), dy-1) 
+        print(f"Vertical line points {p1} {p2}")
+        cv2.line(self.imageHoleCrop, p1, p2, (255, 0, 0), 3) #View X1 Blue
+ 
  
         p1 = (0, int(self.cY))
         p2 = (int(self.cX-x1), int(self.cY))

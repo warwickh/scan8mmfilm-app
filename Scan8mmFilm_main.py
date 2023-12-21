@@ -24,6 +24,7 @@ except ImportError:
  
 
 if picamera2_present:
+    os.environ["LIBCAMERA_LOG_LEVELS"] = "2"
     tuning = Picamera2.load_tuning_file("imx219_noir.json")
     picam2 = Picamera2(tuning=tuning)
     #picam2 = Picamera2()
@@ -316,7 +317,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
 
     def outerThreshChanged(self):
-        Frame.innerThresh = self.dsbInner.value()
+        Frame.outerThresh = self.dsbOuter.value()
         self.refreshFrame()
         self.showAdjustValues()
         
