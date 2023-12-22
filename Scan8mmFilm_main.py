@@ -85,7 +85,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnX1Minus.clicked.connect(self.x1Minus)
         self.pbtnX1Plus.clicked.connect(self.x1Plus)
         self.pbtnX2Minus.clicked.connect(self.x2Minus)
-        self.pbtnX2Plus.clicked.connect(self.x1Plus)
+        self.pbtnX2Plus.clicked.connect(self.x2Plus)
         self.actionExit.triggered.connect(self.doClose)
         self.actionAbout.triggered.connect(self.about)
         if  picamera2_present:
@@ -344,7 +344,7 @@ class Window(QMainWindow, Ui_MainWindow):
             self.lblX1.setText(str(Frame.s8_holeCrop.x1))
         else:
             Frame.r8_holeCrop.x1+=1
-            self.lblX2.setText(str(Frame.r8_holeCrop.x1))
+            self.lblX1.setText(str(Frame.r8_holeCrop.x1))
         self.refreshFrame()
         self.showAdjustValues()
 

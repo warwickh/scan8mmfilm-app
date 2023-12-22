@@ -640,8 +640,8 @@ class Film:
     def cropFrame(self, fileName):
             print(f" instance path {self.scanFolder}")
             print(f" instance path crop {self.cropFolder}")
-            scanFolder = "C:\\Users\\F98044d\\Downloads\\dup_test" #temporary TODO
-            cropFolder = "C:\\Users\\F98044d\\Downloads\\crop_test" #temporary TODO
+            scanFolder = self.scanFolder#"C:\\Users\\F98044d\\Downloads\\dup_test" #temporary TODO
+            cropFolder = self.cropFolder#"C:\\Users\\F98044d\\Downloads\\crop_test" #temporary TODO
             print(f"Cropping {fileName} from {scanFolder}")
             frame = Frame(os.path.join(scanFolder, fileName))
             frame.cropPic()
@@ -653,24 +653,27 @@ class Film:
         os.chdir(Film.scanFolder)
         fileList = sorted(glob.glob('*.jpg'))
         self.scanFileCount = len(fileList)
-        with ProcessPool(processes=os.cpu_count()) as pool:
-            pool.map(self.cropFrame, fileList)
-        #for fn in fileList:
-        #    self.cropFrame(fn, frameNo)
-            #frame = Frame(os.path.join(Film.scanFolder, fn))
-            #frame.cropPic()
-            #cv2.imwrite(os.path.join(Film.cropFolder, f"frame{frameNo:06}.jpg"), frame.imageCropped)
-            #self.curFrameNo = frameNo
-            #if progress is not None:
-            #    if progress(frame) == 0:
-            #        break
-            #frameNo = frameNo+1
+        multi = False
+        if multi:
+            with ProcessPool(processes=os.cpu_count()) as pool:
+                pool.map(self.cropFrame, fileList)
+        else:
+            for fn in fileList:
+                self.cropFrame(fn, frameNo)
+                frame = Frame(os.path.join(Film.scanFolder, fn))
+                frame.cropPic()
+                cv2.imwrite(os.path.join(Film.cropFolder, f"frame{frameNo:06}.jpg"), frame.imageCropped)
+                self.curFrameNo = frameNo
+                if progress is not None:
+                    if progress(frame) == 0:
+                        break
+                frameNo = frameNo+1
                     
     def makeFilm(self, filmName, progressReport, filmDone) :
         self.progressReport = progressReport
         self.filmDone = filmDone
         os.chdir(Film.cropFolder)
-        filmPathName = os.path.join(Film.filmFolder, filmName) + '.avi'#'.mp4'
+        filmPathName = os.path.join(Film.filmFolder, filmName) + '.mp4'
         if os.path.isfile(filmPathName):
             os.remove(filmPathName)
         
