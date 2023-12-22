@@ -659,7 +659,6 @@ class Film:
                 pool.map(self.cropFrame, fileList)
         else:
             for fn in fileList:
-                self.cropFrame(fn, frameNo)
                 frame = Frame(os.path.join(Film.scanFolder, fn))
                 frame.cropPic()
                 cv2.imwrite(os.path.join(Film.cropFolder, f"frame{frameNo:06}.jpg"), frame.imageCropped)
