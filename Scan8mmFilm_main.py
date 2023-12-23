@@ -387,7 +387,7 @@ class Window(QMainWindow, Ui_MainWindow):
     def motorTimeout(self) :
         self.motorTicks = self.motorTicks + 1 
         #pidevi.spoolStart()
-        if self.motorTicks > 3 :
+        if self.motorTicks > 5 :
             self.motorStop()
         
     def capture_done(self,job):

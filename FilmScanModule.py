@@ -350,23 +350,32 @@ class Frame:
         #Find a range containing a sprocket closest to centre by comparing sprocket/not sprocket gaps with ratio
         #detected sprocket must be within 0.3 of the frame
         frameLocated=False
-        sprocketStart=None
+        sprocketStartList=[]
         for i in range(0,len(peaks)-2):
             print(f"Ratio {self.ratio}")
             #print(f"Ratio {(peaks[i+1]-peaks[i])/(peaks[i+2]-peaks[i+1])} {(peaks[i+2]-peaks[i+1])/(peaks[i+1]-peaks[i])} ideal {ideal_ratio}")
             if (((peaks[i+1]-peaks[i])/(peaks[i+2]-peaks[i+1]) - self.ratio) < 0.5):
-                sprocketStart = peaks[i+1]
+                sprocketStartList.append(peaks[i+1])
                 print(f"Ratio Back {((peaks[i+1]-peaks[i])/(peaks[i+2]-peaks[i+1]))}")
             elif (((peaks[i+2]-peaks[i+1])/(peaks[i+1]-peaks[i]) - self.ratio) < 0.5):
-                sprocketStart = peaks[i]
+                sprocketStartList.append(peaks[i])
                 print(f"Ratio forward {((peaks[i+2]-peaks[i+1])/(peaks[i+1]-peaks[i]))}")
-            print(f"Found sprocket at {sprocketStart} using ratio which is {(midy-sprocketStart)/dy:.2f} from the centre")
-            if sprocketStart and abs((midy-sprocketStart)/dy)<0.3:
-                y1=int(sprocketStart-(1*self.maxSprocketSize))
-                y2=int(sprocketStart+(1.5*self.maxSprocketSize))
-                print(f" Sprocket within range, so new y1 {y1} new y2 {y2}")
-                frameLocated = True
-                break
+            #print(f"Found sprocket at {sprocketStart} using ratio which is {(midy-sprocketStart)/dy:.2f} from the centre")
+        minDist = 1
+        sprocketStart = 0
+        for sprocket in sprocketStartList:
+            dist = abs((midy-sprocket)/dy)
+            print(f"{sprocket} {dist}")
+            if dist<minDist:
+                minDist=dist
+                sprocketStart = sprocket
+        print(f"Best sprocket at {sprocketStart} with {minDist}")
+        if minDist<0.3:
+            y1=int(sprocketStart-(1.5*self.maxSprocketSize))
+            y2=int(sprocketStart+(1.5*self.maxSprocketSize))
+            print(f" Sprocket within range, so new y1 {y1} new y2 {y2}")
+            frameLocated = True
+            #break
         #Locate sprocket in reduced range
         for y in range(y1,y2):
             if smoothedHisto[y]>outerThreshold:
@@ -484,10 +493,11 @@ class Frame:
         plt.axvline(trough, color='pink', linewidth=1)
         plt.xlim([0, dy])
         #plt.show()
+        plt.savefig(os.path.expanduser("~/my_cv2hist_full.png"))
         plt.xlim(y1,y2)
         plt.savefig(os.path.expanduser("~/my_cv2hist.png"))
         #plt.show()
-        plt.savefig(Frame.hist_path)#os.path.expanduser("~/my_cv2hist_lim.png"))
+        #plt.savefig(Frame.hist_path)#os.path.expanduser("~/my_cv2hist_lim.png"))
         #self.histogram = cv2.imread(os.path.expanduser("~/my_cv2hist_lim.png"))
         plt.clf()
         cv2.imwrite(os.path.expanduser("~/sprocketStrip.png"), self.imageHoleCrop)
