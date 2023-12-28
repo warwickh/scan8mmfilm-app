@@ -303,6 +303,29 @@ class Frame:
                 break
         return wco        
 
+    def findX1(self):
+        """find left side of sprocket holes"""
+       # _,dx,_ = self.image.shape
+        
+        searchRange = 10 #may need to adjust with image size
+        ratioThresh = 0.15 #may need to adjust with film format
+        
+        searchStart = int(self.holeCrop.x1-searchRange)
+        searchEnd = int(self.holeCrop.x1+searchRange)
+        step = 1
+
+        countSteps = 0 #check that we're not taking too long
+        for x1 in range(searchStart,searchEnd,step):
+            gray = cv2.cvtColor(self.image[:,int(x1):int(x1+step),:], cv2.COLOR_BGR2GRAY)
+            thresh = cv2.threshold(gray, 140, 255, cv2.THRESH_BINARY)[1]
+            ratio = float(np.sum(thresh == 255)/self.dx)
+            print(f"x {x1} ratio {ratio}")
+            countSteps+=1
+            if ratio>ratioThresh:
+                #cv2.imwrite(os.path.join("C:\\Users\\F98044d\\Downloads\\dup_test_out",f"strip_{x1}.jpg"), thresh)
+                print(f"x {x1} ratio {ratio} steps {countSteps}")
+                return x1
+
     # Based on https://github.com/cpixip/sprocket_detection
     # initial testing had issues with selecting point between 2 holes TODO
     # Added initial range check
@@ -319,7 +342,11 @@ class Frame:
         y2 = self.holeCrop.y2
         #x1 = int(Frame.holeCrop.x1*Frame.ScaleFactor)
         #x2 = int(Frame.holeCrop.x2*Frame.ScaleFactor)
-        x1 = int(self.holeCrop.x1)
+        
+        #x1 = int(self.holeCrop.x1)
+        x1 = self.findX1()
+        if not x1:
+            return 3 #fail
         x2 = int(self.holeCrop.x2)
         print(f"x1 {x1} x2 {x2} y1 {y1} y2 {y2}")
         self.imageHoleCrop = self.image[:,int(x1):int(x1+2*(x2-x1)),:]
