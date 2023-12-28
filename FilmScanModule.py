@@ -307,19 +307,22 @@ class Frame:
         """find left side of sprocket holes"""
        # _,dx,_ = self.image.shape
         
-        searchRange = 10 #may need to adjust with image size
+        searchRange = 50 #may need to adjust with image size
         ratioThresh = 0.15 #may need to adjust with film format
         
-        searchStart = int(self.holeCrop.x1-searchRange)
+        #searchStart = int(self.holeCrop.x1-searchRange)
+        searchStart = 0
         searchEnd = int(self.holeCrop.x1+searchRange)
-        step = 1
+        step = 100
 
         countSteps = 0 #check that we're not taking too long
         for x1 in range(searchStart,searchEnd,step):
-            gray = cv2.cvtColor(self.image[:,int(x1):int(x1+step),:], cv2.COLOR_BGR2GRAY)
-            thresh = cv2.threshold(gray, 140, 255, cv2.THRESH_BINARY)[1]
-            ratio = float(np.sum(thresh == 255)/self.dx)
-            print(f"x {x1} ratio {ratio}")
+            strip = self.image[:,int(x1):int(x1+step),:]
+            gray = cv2.cvtColor(strip, cv2.COLOR_BGR2GRAY)
+            thresh = cv2.threshold(strip, 140, 255, cv2.THRESH_BINARY)[1]
+            ratio = float(np.sum(thresh == 255)/(self.dx*step))
+            print(f"x {x1} ratio {ratio} {np.sum(thresh == 255)} dx {self.dx*step}")
+            cv2.imwrite(os.path.expanduser("~/testx.png"), thresh)
             countSteps+=1
             if ratio>ratioThresh:
                 #cv2.imwrite(os.path.join("C:\\Users\\F98044d\\Downloads\\dup_test_out",f"strip_{x1}.jpg"), thresh)
@@ -347,7 +350,10 @@ class Frame:
         x1 = self.findX1()
         if not x1:
             return 3 #fail
-        x2 = int(self.holeCrop.x2)
+        s8_sprocketWidth = 0.06
+        x2 = x1 + int(s8_sprocketWidth*self.dx)
+        print(f"x2 was {int(self.holeCrop.x2)} now {x2}")
+        #x2 = int(self.holeCrop.x2)
         print(f"x1 {x1} x2 {x2} y1 {y1} y2 {y2}")
         self.imageHoleCrop = self.image[:,int(x1):int(x1+2*(x2-x1)),:]
         self.imageHoleCropHide = self.image[:,int(x1):int(x2),:]
