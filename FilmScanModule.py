@@ -307,19 +307,26 @@ class Frame:
         """find left side of sprocket holes"""
        # _,dx,_ = self.image.shape
         
-        searchRange = 50 #may need to adjust with image size
-        ratioThresh = 0.15 #may need to adjust with film format
-        
+        searchRange = 450 #may need to adjust with image size
+        ratioThresh = 0.05 #may need to adjust with film format
+    
         #searchStart = int(self.holeCrop.x1-searchRange)
         searchStart = 0
-        searchEnd = int(self.holeCrop.x1+searchRange)
-        step = 100
+        searchEnd = int(searchStart+searchRange)
+        step = 10
 
         countSteps = 0 #check that we're not taking too long
         for x1 in range(searchStart,searchEnd,step):
             strip = self.image[:,int(x1):int(x1+step),:]
-            gray = cv2.cvtColor(strip, cv2.COLOR_BGR2GRAY)
-            thresh = cv2.threshold(strip, 140, 255, cv2.THRESH_BINARY)[1]
+            #gray = cv2.cvtColor(strip, cv2.COLOR_BGR2GRAY)
+            #thresh = cv2.threshold(strip, 140, 255, cv2.THRESH_BINARY)[1]
+            
+            hsv = cv2.cvtColor(strip, cv2.COLOR_RGB2HSV)
+            lower_white = np.array([0, 0, 212])
+            upper_white = np.array([131, 255, 255])
+            thresh = cv2.inRange(hsv, lower_white, upper_white)
+            
+            
             ratio = float(np.sum(thresh == 255)/(self.dx*step))
             print(f"x {x1} ratio {ratio} {np.sum(thresh == 255)} dx {self.dx*step}")
             cv2.imwrite(os.path.expanduser("~/testx.png"), thresh)
