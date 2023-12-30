@@ -552,7 +552,7 @@ class Window(QMainWindow, Ui_MainWindow):
             else:
                 self.lblScanFrame.setText(self.frame.imagePathName)       
             self.lblInfo1.setText(f"cX={frame.cX} cY={frame.cY} midy={frame.midy} led={Film.led_dc}")
-            if frame.sprocketSize is not None:
+            if frame.sprocketSize>0:
                 self.lblInfo2.setText(f"res={frame.locateHoleResult} sprocketSize={frame.sprocketSize}")
         else:
             self.lblScanInfo.setText(f"Frame count = {self.film.scanFileCount}")

@@ -2,8 +2,10 @@ import cv2
 import numpy as np
 import os
 
+def map(hsv):
+    return [hsv[0]/360*180, hsv[1]/100*255, hsv[2]/100*255]
 
-def findX1(image):
+def findX1(image, name):
     """find left side of sprocket holes"""
     _,dx,_ = image.shape
     
@@ -13,54 +15,48 @@ def findX1(image):
     #searchStart = int(self.holeCrop.x1-searchRange)
     searchStart = 0
     searchEnd = int(searchStart+searchRange)
-    step = 10
-
+    step = 40
     countSteps = 0 #check that we're not taking too long
+    hMin = 80
+    sMin = 9
+    vMin = 54
+    hMax = 150
+    sMax = 60
+    vMax = 238
+    lower = np.array([hMin, sMin, vMin])
+    upper = np.array([hMax, sMax, vMax])
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    thresh = cv2.inRange(hsv, lower, upper)
+    short_name = name.rsplit('.', maxsplit=1)[0]
+    #cv2.imwrite(os.path.join("C:\\Users\\F98044d\\Downloads\\dup_test_out",f"{short_name}_thresh.jpg"), thresh)
     for x1 in range(searchStart,searchEnd,step):
-        strip = image[:,int(x1):int(x1+step),:]
-        #gray = cv2.cvtColor(strip, cv2.COLOR_BGR2GRAY)
-        #thresh = cv2.threshold(strip, 140, 255, cv2.THRESH_BINARY)[1]
-
-
-        hsv = cv2.cvtColor(strip, cv2.COLOR_RGB2HSV)
-        lower_white = np.array([0, 0, 212])
-        upper_white = np.array([131, 255, 255])
-        # Threshold the HSV image
-        thresh = cv2.inRange(hsv, lower_white, upper_white)
-        cv2.imwrite(os.path.join("C:\\Users\\F98044d\\Downloads\\dup_test_out",f"mask_{x1}.jpg"), thresh)
-
-        ratio = float(np.sum(thresh == 255)/(dx*step))
-        print(f"x {x1} ratio {ratio} {np.sum(thresh == 255)} dx {dx*step}")
-        print(os.environ.get('HOMEPATH'))
-        #cv2.imwrite(os.path.expanduser("~/testx.png"), thresh)
+        strip = thresh[:,int(x1):int(x1+step),]
+        ratio = float(np.sum(strip == 255)/(dx*step))
+        print(f"x {x1} ratio {ratio} {np.sum(strip == 255)} dx {dx*step}")
         p1 = (int(x1), int(0)) 
         p2 = (int(x1), int(dy)) 
         print(f"Vertical line points {p1} {p2}")
         cv2.line(image, p1, p2, (255, 255, 255), 3) #Vert
-        cv2.imwrite(os.path.join("C:\\Users\\F98044d\\Downloads\\dup_test_out",f"strip_{x1}.jpg"), thresh)
-
-
-
+        #cv2.imwrite(os.path.join("C:\\Users\\F98044d\\Downloads\\dup_test_out",f"{short_name}_image_{x1}.jpg"), image)
         countSteps+=1
         if ratio>ratioThresh:
-            cv2.imwrite(os.path.join("C:\\Users\\F98044d\\Downloads\\dup_test_out",f"final_strip_{x1}.jpg"), thresh)
-            cv2.imwrite(os.path.join("C:\\Users\\F98044d\\Downloads\\dup_test_out",f"final_image_{x1}.jpg"), image)
+            cv2.imwrite(os.path.join("C:\\Users\\F98044d\\Downloads\\dup_test_out",f"{short_name}_final_strip_{x1}.jpg"), thresh)
+            cv2.imwrite(os.path.join("C:\\Users\\F98044d\\Downloads\\dup_test_out",f"{short_name}_final_image_{x1}.jpg"), image)
             #cv2.imwrite(os.path.expanduser("~/testx.png"), thresh)
             print(f"x {x1} ratio {ratio} steps {countSteps}")
             return x1
 
 
-
-
 folder = "C:\\Users\\F98044d\\Downloads\\dup_test"
 folder = "C:\\Users\\F98044d\\Videos\\git\\scan8mmfilm-app"
+files = ["scan002417.jpg","scan000000.jpg"]
 for file in os.listdir(folder):
-  if file=="scan000000.jpg":
+  #if file in files:
     print(f"File {file}")
     imagePathName = os.path.join(folder,file)#"scan000000.jpg"
     image = cv2.imread(imagePathName)
     dy,dx,_ = image.shape
-    x1 = findX1(image)
+    x1 = findX1(image,file)
 
     #gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 

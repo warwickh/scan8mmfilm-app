@@ -9,6 +9,7 @@ __pycache__/
 scanframes/
 cropframes/
 *.png
+scan*.jpg
 
 # Distribution / packaging
 .Python
