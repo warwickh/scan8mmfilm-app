@@ -17,11 +17,11 @@ def findX1(image, name):
     searchEnd = int(searchStart+searchRange)
     step = 40
     countSteps = 0 #check that we're not taking too long
-    hMin = 80
-    sMin = 9
+    hMin = 30
+    sMin = 5
     vMin = 54
     hMax = 150
-    sMax = 60
+    sMax = 80
     vMax = 238
     lower = np.array([hMin, sMin, vMin])
     upper = np.array([hMax, sMax, vMax])
@@ -37,11 +37,12 @@ def findX1(image, name):
         p2 = (int(x1), int(dy)) 
         print(f"Vertical line points {p1} {p2}")
         cv2.line(image, p1, p2, (255, 255, 255), 3) #Vert
+        cv2.imwrite(os.path.join("/home/warwickh/scanframes",f"{short_name}_final_strip_{x1}.jpg"), thresh)
         #cv2.imwrite(os.path.join("C:\\Users\\F98044d\\Downloads\\dup_test_out",f"{short_name}_image_{x1}.jpg"), image)
         countSteps+=1
         if ratio>ratioThresh:
-            cv2.imwrite(os.path.join("C:\\Users\\F98044d\\Downloads\\dup_test_out",f"{short_name}_final_strip_{x1}.jpg"), thresh)
-            cv2.imwrite(os.path.join("C:\\Users\\F98044d\\Downloads\\dup_test_out",f"{short_name}_final_image_{x1}.jpg"), image)
+            cv2.imwrite(os.path.join("/home/warwickh/scanframes",f"{short_name}_final_strip_{x1}.jpg"), thresh)
+            cv2.imwrite(os.path.join("/home/warwickh/scanframes",f"{short_name}_final_image_{x1}.jpg"), image)
             #cv2.imwrite(os.path.expanduser("~/testx.png"), thresh)
             print(f"x {x1} ratio {ratio} steps {countSteps}")
             return x1
@@ -49,9 +50,10 @@ def findX1(image, name):
 
 folder = "C:\\Users\\F98044d\\Downloads\\dup_test"
 folder = "C:\\Users\\F98044d\\Videos\\git\\scan8mmfilm-app"
-files = ["scan002417.jpg","scan000000.jpg"]
+folder = "/home/warwickh/scanframes/roll4e"
+files = ["scan001431.jpg"]
 for file in os.listdir(folder):
-  #if file in files:
+  if file in files:
     print(f"File {file}")
     imagePathName = os.path.join(folder,file)#"scan000000.jpg"
     image = cv2.imread(imagePathName)

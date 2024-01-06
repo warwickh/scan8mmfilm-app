@@ -1,14 +1,15 @@
 import cv2
 import numpy as np
-
+import os
 def nothing(x):
     pass
 
 # Load image
 ScaleFactor = 0.25
-imagein = cv2.imread('scan000000.jpg')
-imagein = cv2.imread('scan002417.jpg')
-imagein = cv2.imread('C:\\Users\\F98044d\\Videos\\git\\scan8mmfilm-app\\scanframes\\scan002103.jpg')
+#imagein = cv2.imread('scan000000.jpg')
+#imagein = cv2.imread('scan002417.jpg')
+#imagein = cv2.imread('/home/warwickh/scanframes/roll4e/scan001431.jpg')
+imagein = cv2.imread(os.path.expanduser("~/image.png"))
 image = cv2.resize(imagein, (0,0), fx=ScaleFactor, fy=ScaleFactor)
 # Create a window
 cv2.namedWindow('image')
@@ -42,14 +43,12 @@ while(True):
     
     #lower_white = np.array([80, 9, 54])
     #upper_white = np.array([150, 60, 238])
-    """
-    hMin = 80
-    sMin = 9
-    vMin = 54
-    hMax = 150
-    sMax = 60
-    vMax = 238
-    """
+    #hMin = 0
+    #sMin = 0
+    #vMin = 54
+    #hMax = 150
+    #sMax = 85
+    #vMax = 255
 
     # Set minimum and maximum HSV values to display
     lower = np.array([hMin, sMin, vMin])
