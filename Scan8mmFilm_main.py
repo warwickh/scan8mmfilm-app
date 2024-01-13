@@ -51,7 +51,7 @@ class Window(QMainWindow, Ui_MainWindow):
             self.qpicamera2 = QGlPicamera2(picam2, width=800, height=600, keep_ar=True)
             self.horizontalLayout_4.addWidget(self.qpicamera2)
         self.dsbInner.setValue(float(Frame.innerThresh))
-        self.dsbOuter.setValue(float(Frame.outerThresh))
+        #self.dsbOuter.setValue(float(Frame.outerThresh))
         self.connectSignalsSlots()
         self.lblHoleCrop.setMinimumWidth(Frame.getHoleCropWidth())
         self.adjustableRects = getAdjustableRects()
@@ -60,7 +60,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.adjRectIx = 0
         self.comboBox.currentIndexChanged.connect(self.adjustableRectChanged)
         self.dsbInner.setValue(float(Frame.innerThresh))
-        self.dsbOuter.setValue(float(Frame.outerThresh))
+        #self.dsbOuter.setValue(float(Frame.outerThresh))
         self.doLblImagePrep = False
 
         QTimer.singleShot(100, self.initScanner)
@@ -80,7 +80,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnLedPlus.clicked.connect(self.ledPlus)
         self.pbtnLedMinus.clicked.connect(self.ledMinus)
         self.pbtnSpool.clicked.connect(self.spool)
-        self.dsbOuter.valueChanged.connect(self.outerThreshChanged)
+        #self.dsbOuter.valueChanged.connect(self.outerThreshChanged)
         self.dsbInner.valueChanged.connect(self.innerThreshChanged)
         self.pbtnX1Minus.clicked.connect(self.x1Minus)
         self.pbtnX1Plus.clicked.connect(self.x1Plus)
@@ -316,10 +316,10 @@ class Window(QMainWindow, Ui_MainWindow):
         self.showAdjustValues()
 
 
-    def outerThreshChanged(self):
-        Frame.outerThresh = self.dsbOuter.value()
-        self.refreshFrame()
-        self.showAdjustValues()
+    #def outerThreshChanged(self):
+    #    Frame.outerThresh = self.dsbOuter.value()
+    #    self.refreshFrame()
+    #    self.showAdjustValues()
         
     def innerThreshChanged(self):
         Frame.innerThresh = self.dsbInner.value()
@@ -552,8 +552,8 @@ class Window(QMainWindow, Ui_MainWindow):
             else:
                 self.lblScanFrame.setText(self.frame.imagePathName)       
             self.lblInfo1.setText(f"cX={frame.cX} cY={frame.cY} midy={frame.midy} led={Film.led_dc}")
-            if frame.sprocketSize>0:
-                self.lblInfo2.setText(f"res={frame.locateHoleResult} sprocketSize={frame.sprocketSize}")
+            if frame.sprocketHeight>0:
+                self.lblInfo2.setText(f"res={frame.locateHoleResult} SprocketHeight={frame.sprocketHeight}")
         else:
             self.lblScanInfo.setText(f"Frame count = {self.film.scanFileCount}")
             self.lblScanFrame.setText(Film.scanFolder) 
@@ -742,7 +742,7 @@ class QThreadScan(QtCore.QThread):
                 image = picam2.switch_mode_and_capture_array(capture_config, "main") #, signal_function=self.qpicamera2.signal_done)
                 self.frame = Frame(image=image)
                 locateHoleResult = self.frame.locateSprocketHole()#Frame.holeMinArea)
-                print("cY",self.frame.cY ,"oldY", oldY, "locateHoleResult", locateHoleResult,"cmd",self.cmd,"sprocketsize",self.frame.sprocketSize)
+                print("cY",self.frame.cY ,"oldY", oldY, "locateHoleResult", locateHoleResult,"cmd",self.cmd,"SprocketHeight",self.frame.sprocketHeight)
                 
                 if locateHoleResult != 0 :
                     if locateHoleResult==2:
@@ -823,7 +823,6 @@ if __name__ == "__main__":
     safe = True#False
     if safe:
         try:
-            
             app = QApplication(sys.argv) 
             win = Window()
             if  picamera2_present:
