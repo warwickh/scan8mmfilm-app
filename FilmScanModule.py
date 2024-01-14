@@ -171,7 +171,7 @@ class Frame:
     format = "s8"
     s8_frameCrop = Rect("s8_frame_crop", 2, -107, 2+1453, 1040-107)
     s8_holeCrop = Rect("s8_hole_crop", 75, 0, 110, 2463) 
-    s8_stdSprocketHeight = 0.13
+    s8_stdSprocketHeight = 0.1
     s8_sprocketWidth = 0.05
     s8_midx = 64
     s8_midy = 240
@@ -361,7 +361,7 @@ class Frame:
         outerLow = y1
         minPeakValue  = self.smoothedHisto[y1:y2].min()
         maxPeakValue  = self.smoothedHisto[y1:y2].max()
-        valueRange = (maxPeakValue-minPeakValue)*0.01
+        valueRange = (maxPeakValue-minPeakValue)*0.02
         self.innerThreshold = Frame.innerThresh*maxPeakValue
         print(f"Range size {valueRange:.02f} min {minPeakValue:.02f} max {minPeakValue+valueRange:.02f}")
         lowRanges = []
@@ -369,7 +369,7 @@ class Frame:
             if self.smoothedHisto[y]<minPeakValue+valueRange and self.smoothedHisto[y]>=minPeakValue:
                 peaks.append(y)
             else:
-                if len(peaks)>50:
+                if len(peaks)>100:
                     print(f"values caught {len(peaks)} mid {peaks[len(peaks)//2]}")
                     lowRanges.append(peaks)
                     peaks = []
@@ -416,6 +416,39 @@ class Frame:
         plt.clf()
         return innerHigh, innerLow
 
+    def processCanny(self):
+        #testing canny
+        #img = cv2.imread('messi5.jpg',0)
+        img = self.imageHoleCropHide
+        cv2.imwrite(os.path.expanduser("~/colour.png"), img)
+        img = cv2.cvtColor(self.imageHoleCropHide, cv2.COLOR_BGR2GRAY)
+        cv2.imwrite(os.path.expanduser("~/gray.png"), img)
+        edges = cv2.Canny(img,25,255)
+        #plt.subplot(121),plt.imshow(img,cmap = 'gray')
+        #plt.title('Original Image'), plt.xticks([]), plt.yticks([])
+        #plt.subplot(122),plt.imshow(edges,cmap = 'gray')
+        #plt.title('Edge Image'), plt.xticks([]), plt.yticks([])
+        cv2.imwrite(os.path.expanduser("~/edges.png"), edges)
+        #plt.show()
+        cannyprocketEdges = np.absolute(edges)
+        cannyHistogram     = np.mean(cannyprocketEdges,axis=(1))
+        cannySmoothedHisto = cv2.GaussianBlur(cannyHistogram,(1,filterSize),0)
+        plt.clf()
+        plt.plot(cannySmoothedHisto)
+        #plt.axvline(cY, color='blue', linewidth=1)
+        #plt.axvline(searchCenter, color='orange', linewidth=1)
+        #plt.axvline(innerHigh, color='green', linewidth=1)
+        #plt.axvline(innerLow, color='red', linewidth=1)
+        #plt.axvline(outerHigh, color='purple', linewidth=1)
+        #plt.axvline(outerLow, color='gray', linewidth=1)
+        #plt.axhline(innerThreshold, color='cyan', linewidth=1)
+        #plt.axhline(outerThreshold, color='olive', linewidth=1)
+        #plt.axvline(trough, color='pink', linewidth=1)
+        #plt.xlim([0, dy])
+        #plt.show()
+        plt.savefig(os.path.expanduser("~/my_cannyhist_full.png"))
+        plt.clf()
+
     def locateSprocketHole(self):
         # Based on https://github.com/cpixip/sprocket_detection
         print(f"locateSprocketHole {self.image.shape} {self.imagePathName}")
@@ -441,7 +474,7 @@ class Frame:
         innerHigh, innerLow = self.findSprocket()
         self.sprocketHeight = innerHigh-innerLow
         cY = (innerHigh+innerLow)//2
-        sprocketHeightTol = 0.01
+        sprocketHeightTol = 0.04
         print(f"Using sprocket {self.sprocketHeight} in range {(self.stdSprocketHeight-sprocketHeightTol)*self.dy:.2f} to {(self.stdSprocketHeight+sprocketHeightTol)*self.dy:.2f}")
         if self.sprocketHeight==0:
             print(f"Invalid sprocket size zero {self.sprocketHeight}")
