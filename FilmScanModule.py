@@ -217,14 +217,16 @@ class Frame:
             self.holeCrop = Rect("hole_crop", Frame.s8_holeCrop.x1*self.ScaleFactor, 0, Frame.s8_holeCrop.x2*self.ScaleFactor, self.dy-1)
             self.frameCrop = Frame.s8_frameCrop
             self.ratio = Frame.s8_ratio
+            self.midy = Frame.s8_midy*self.ScaleFactor
         else:
             self.minSprocketSize = Frame.r8_minSprocketSize*self.ScaleFactor
             self.maxSprocketSize = Frame.r8_maxSprocketSize*self.ScaleFactor
             self.holeCrop = Rect("hole_crop", Frame.r8_holeCrop.x1*self.ScaleFactor, 0, Frame.r8_holeCrop.x2*self.ScaleFactor, self.dy-1)
             self.frameCrop = Frame.r8_frameCrop
             self.ratio = Frame.r8_ratio
+            self.midy = Frame.r8_midy*self.ScaleFactor
         self.midx = 115*self.ScaleFactor   # always overwitten 
-        self.midy = self.dy//2#240*self.ScaleFactor 
+        #self.midy = self.dy//2#240*self.ScaleFactor 
         self.cX = self.midx 
         self.cY = self.midy
         self.sprocketSize = 0    
@@ -428,7 +430,7 @@ class Frame:
         locatedX = False
         if sprocketSize>0:
             rx1 = x1
-            rx2 = x1 + 2*(x2-x1)
+            rx2 = x1 + 4*(x2-x1)
             ry = int(0.8*sprocketSize)
             ry1 = cY-ry//2
             ry2 = cY+ry//2
