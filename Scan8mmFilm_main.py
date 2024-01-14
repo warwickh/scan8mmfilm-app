@@ -85,7 +85,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnX1Minus.clicked.connect(self.x1Minus)
         self.pbtnX1Plus.clicked.connect(self.x1Plus)
         self.pbtnX2Minus.clicked.connect(self.x2Minus)
-        self.pbtnX2Plus.clicked.connect(self.x1Plus)
+        self.pbtnX2Plus.clicked.connect(self.x2Plus)
         self.actionExit.triggered.connect(self.doClose)
         self.actionAbout.triggered.connect(self.about)
         if  picamera2_present:
