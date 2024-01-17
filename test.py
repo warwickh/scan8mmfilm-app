@@ -9,7 +9,9 @@ ScaleFactor = 0.25
 #imagein = cv2.imread('scan000000.jpg')
 #imagein = cv2.imread('scan002417.jpg')
 #imagein = cv2.imread('/home/warwickh/scanframes/roll4e/scan001431.jpg')
-imagein = cv2.imread(os.path.expanduser("~/image.png"))
+#imagein = cv2.imread(os.path.expanduser("~/image.png"))
+imagein = cv2.imread(os.path.expanduser("~/2.png"))
+
 image = cv2.resize(imagein, (0,0), fx=ScaleFactor, fy=ScaleFactor)
 # Create a window
 cv2.namedWindow('image')
