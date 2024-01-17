@@ -291,11 +291,6 @@ class Frame:
         self.calcCrop()
         self.imageCropped = self.image[self.p1[1]:self.p2[1], self.p1[0]:self.p2[0]]   
 
-    def locateSprocketHoleTest(self):
-        print(f"processing")
-        self.locateHoleResult = self.sprocketHole.process()
-        return self.locateHoleResult
-
     def findSprocketLeft(self):
         returnX1 = 0
         returnX2 = 0
@@ -431,6 +426,11 @@ class Frame:
         return innerHigh, innerLow
 
     def locateSprocketHole(self):
+        print(f"processing")
+        self.locateHoleResult, self.cY, self.cX = self.sprocketHole.process()#cX rX
+        return self.locateHoleResult
+
+    def locateSprocketHoleOld(self):
         # Based on https://github.com/cpixip/sprocket_detection
         print(f"locateSprocketHole {self.image.shape} {self.imagePathName}")
         filterSize = 25                 # smoothing kernel - leave it untouched

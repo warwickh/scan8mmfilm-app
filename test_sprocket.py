@@ -9,10 +9,10 @@ import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
     Ini.loadConfig()
-    folder = os.path.expanduser("~/scanframes/inbound-test")
+    folder = os.path.expanduser("~/scanframes/roll4redo")
     #folder = os.path.expanduser("~/scanframes/roll3a")
     os.chdir(folder)
-    fileList = sorted(glob.glob('*0015.jpg'))
+    fileList = sorted(glob.glob('*.jpg'))
     result_file = open( os.path.expanduser("~/frames.json"), "w")
     result_file.close()
     for fn in fileList:
@@ -21,3 +21,5 @@ if __name__ == "__main__":
         frame = Frame(os.path.join(folder,fn))
         locateHoleResult = frame.locateSprocketHoleTest()
         print(f"Final result {locateHoleResult}")
+        if not locateHoleResult==0:
+            break

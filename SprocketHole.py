@@ -64,7 +64,7 @@ class sprocketHole:
                 self.results[method]['cY'] = self.cY
                 #results[method]['cX'] = self.cX
                 self.results[method]['rX'] = self.rX
-                return result
+                return result, self.cY, self.rX
             print(f"{method} took {elapsed_time:.04f} with result {self.locateHoleResult}")
             #if self.locateHoleResult==0:
             #    print(f"Got a result {self.locateHoleResult}")
