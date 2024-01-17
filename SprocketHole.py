@@ -28,8 +28,9 @@ class sprocketHole:
         self.rX = self.cX + self.sprocketWidth
         self.midy = self.frame.midy
         self.whiteThreshold = 225
-        self.threshImg = os.path.expanduser("~/whitethresh.png")
-
+        #self.threshImg = os.path.expanduser("~/whitethresh.png")
+        self.threshImg = os.path.join(os.path.dirname(self.imagePathName),"whitethresh.png")
+        self.resultImagePath = self.frame.resultImagePath
         #self.dy,self.dx,_ = self.image.shape
         #self.ScaleFactor = self.dx/640.0
 
@@ -113,6 +114,7 @@ class sprocketHole:
         locateHoleResult = 1 
         oldcX = self.cX
         oldcY = self.cY
+        oldrX = self.rX
         self.area = area_size
         for l in range(lenContours):
             cnt = contours[l]
@@ -131,10 +133,10 @@ class sprocketHole:
             M = cv2.moments(cnt)
             # print(M)
             try:
-                self.cX = int(M["m10"] / M["m00"])
-                self.cY = int(M["m01"] / M["m00"])
+                self.cX = int(M["m10"] / M["m00"])+self.frame.holeCrop.x1
+                self.cY = int(M["m01"] / M["m00"])+self.frame.holeCrop.y1
                 x,y,w,h = cv2.boundingRect(cnt)
-                self.rX = x+w
+                self.rX = x+w+self.frame.holeCrop.x1
                 #holeDist = 225
                 #if cY > holeDist : # distance between holes
                 #    print("cY=", cY)
@@ -145,6 +147,7 @@ class sprocketHole:
                 locateHoleResult = 3 # no center
                 self.cX = oldcX
                 self.cY = oldcY # midy
+                self.rX = oldrX
         else :
             resultImage = cv2.cvtColor(self.imageHoleCrop, cv2.COLOR_GRAY2BGR)
             cv2.drawContours(resultImage, contours, -1, (0,255,0), 3)
@@ -152,8 +155,8 @@ class sprocketHole:
             self.cX = oldcX
             self.cY = oldcY  
                   
-        print("cY=", self.cY, "oldcY=", oldcY, "locateHoleResult=", locateHoleResult)
- 
+        #print("cY=", self.cY, "oldcY=", oldcY, "locateHoleResult=", locateHoleResult)
+        print(f"result {locateHoleResult} cX {self.cX} cY {self.cY} rX {self.rX}")
         p1 = (0, self.cY) 
         p2 = (self.frame.holeCrop.x2-self.frame.holeCrop.x1, self.cY)
         # print(p1, p2)
@@ -174,6 +177,8 @@ class sprocketHole:
         p2 = (self.frame.holeCrop.x2-self.frame.holeCrop.x1, self.midy+1)
         cv2.line(resultImage, p1, p2, (255, 255, 255), 1) # white line
         cv2.imwrite(os.path.expanduser("~/thresh_output.png"),resultImage)
+        cv2.imwrite(self.resultImagePath, resultImage)
+        
         self.locateHoleResult = locateHoleResult
         return locateHoleResult
     
@@ -716,6 +721,7 @@ class sprocketHole:
 
 
         cv2.imwrite(os.path.expanduser("~/ratiosprocketStrip.png"), self.imageHoleCrop)
+        cv2.imwrite(self.resultImagePath, self.imageHoleCrop)
         cv2.imwrite(os.path.expanduser("~/ratioimage.png"), self.image)
         #if locatedX:
         #    cv2.imwrite(os.path.expanduser("~/horizontalStrip.png"), horizontalStrip)  
@@ -833,6 +839,7 @@ class sprocketHole:
 
 
         cv2.imwrite(os.path.expanduser("~/ratiosprocketStrip.png"), self.imageHoleCrop)
+        cv2.imwrite(self.resultImagePath, self.imageHoleCrop)
         cv2.imwrite(os.path.expanduser("~/ratioimage.png"), self.image)
         #if locatedX:
         #    cv2.imwrite(os.path.expanduser("~/horizontalStrip.png"), horizontalStrip)  

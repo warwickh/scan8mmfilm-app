@@ -229,6 +229,7 @@ class Frame:
         self.sprocketHeight = 0    
         self.histogram = None
         #self.histogram = cv2.imread(os.path.expanduser("~/my_cv2hist_lim.png"))
+        self.resultImagePath = os.path.expanduser("~/sprocket_hole_result.png")
         self.locateHoleResult = 6
         #print(f"init complete {self.__dict__}")
         #self.whiteThreshold = 225 # always overwritten by call to getWhiteThreshold
@@ -255,6 +256,7 @@ class Frame:
         
     def getHoleCrop(self) :
         #cv2.imwrite(os.path.expanduser("~/getHoleCrop.png"), self.imageHoleCrop)
+        self.imageHoleCrop = cv2.resize(cv2.imread(self.resultImagePath), (0,0), fx=1/self.ScaleFactor, fy=self.ScaleFactor)
         return self.convert_cv_qt(self.imageHoleCrop)
 
     def getHistogram(self):
