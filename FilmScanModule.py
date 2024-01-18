@@ -664,7 +664,7 @@ class Film:
     def cropAll(self, progress) :
         frameNo = 0
         os.chdir(Film.scanFolder)
-        fileList = sorted(glob.glob('*.jpg'))
+        fileList = sorted(glob.glob('scan*.jpg'))
         self.scanFileCount = len(fileList)
         multi = False
         if multi:
