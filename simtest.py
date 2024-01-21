@@ -48,7 +48,8 @@ for model_layer in vgg16.layers:
 
 if __name__ == "__main__":
     #folder = "C:\\Users\\F98044d\\Downloads\\dup_test"
-    folder = os.path.expanduser("~/scanframes/crop/roll4a")
+    #folder = os.path.expanduser("~/scanframes/crop/roll4a")
+    folder = "D:\\roll4e"
     os.chdir(folder)
     fileList = sorted(glob.glob('*.jpg'))
     lastImage = None

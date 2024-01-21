@@ -422,7 +422,10 @@ class Window(QMainWindow, Ui_MainWindow):
         if frame is not None:
             if self.lblImage.isVisible():
                 self.lblImage.setPixmap(frame.getCropped())
-            self.lblHoleCrop.setPixmap(frame.getHoleCrop())
+            try:
+                self.lblHoleCrop.setPixmap(frame.getHoleCrop())
+            except:
+                pass
             self.lblHist.setPixmap(frame.getHistogram())
             self.frame = frame
 

@@ -28,6 +28,17 @@ class sprocketHole:
         self.rX = self.cX + self.sprocketWidth
         self.midy = self.frame.midy
         self.whiteThreshold = 225
+
+
+        #Thresh needs to see all of the hole         
+        if self.format=="s8":
+            self.threshX1 = 250
+            self.threshX2 = 550
+        else:
+            self.threshX1 = 400
+            self.threshX2 = 1050
+
+
         #self.threshImg = os.path.expanduser("~/whitethresh.png")
         self.threshImg = os.path.join(os.path.dirname(self.imagePathName),"whitethresh.png")
         self.resultImagePath = self.frame.resultImagePath
@@ -77,6 +88,18 @@ class sprocketHole:
 
     def getWhiteThreshold(self, threshFilename):
         #threshFilename = os.path.expanduser("~/thresh_test.png")
+        if not os.path.exists(threshFilename):
+            #testImg = cv2.resize(self.image.copy(), (0,0), fx=1/self.ScaleFactor, fy=1/self.ScaleFactor)
+            #testImg = cv2.resize(self.image, (0,0), fx=1/self.ScaleFactor, fy=1/self.ScaleFactor)
+            testImg = self.image.copy()
+            #cv2.imwrite("d:\\howzitlook.png", testImg)
+            #testImg = cv2.resize(testImg, (0,0), fx=1/self.ScaleFactor, fy=1/self.ScaleFactor)
+            cv2.namedWindow("Resized_Window", cv2.WINDOW_NORMAL) 
+            cv2.resizeWindow("Resized_Window", 800, 600)
+            roi=cv2.selectROI("Resized_Window", testImg)
+            cropped = testImg[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])]
+            cv2.imwrite(threshFilename, cropped)
+            cv2.destroyAllWindows()
         img = cv2.imread(threshFilename)
         dy,dx,_ = img.shape
         #img = imageSmall[self.frame.whiteCrop.y1:self.frame.whiteCrop.y2, self.frame.whiteCrop.x1:self.frame.whiteCrop.x2]
@@ -96,14 +119,15 @@ class sprocketHole:
         return wco   
 
     def locateSprocketHoleThresh(self):
-        area_size=60000
-        print(f"Calc area for {self.format} {(self.stdSprocketHeight*self.dy)*(self.sprocketWidth*self.dx):.02f}")
+        calcAreaSize = (self.stdSprocketHeight*self.dy)*(self.sprocketWidth*self.dx)
+        area_size=0.8*calcAreaSize#60000
+        #rint(f"Calc area for {self.format} {(self.stdSprocketHeight*self.dy)*(self.sprocketWidth*self.dx):.02f}")
         #self.imageSmall = cv2.resize(self.image, (640, 480))
         # the image crop with the sprocket hole 
         localImg = self.image.copy()
         #cv2.imwrite(os.path.expanduser("~/contoursb4cut.png"),img)
-        print(f"Thresh checking boundaries x1 {self.frame.holeCrop.x1} x2 {self.frame.holeCrop.x2} y1 {self.frame.holeCrop.y1} y2 {self.frame.holeCrop.y2}")
-        img = localImg[self.frame.holeCrop.y1:self.frame.holeCrop.y2, self.frame.holeCrop.x1:self.frame.holeCrop.x2]
+        print(f"Thresh checking boundaries x1 {self.threshX1} x2 {self.threshX2} y1 {self.frame.holeCrop.y1} y2 {self.frame.holeCrop.y2}")
+        img = localImg[self.frame.holeCrop.y1:self.frame.holeCrop.y2, self.threshX1:self.threshX2]
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         #self.whiteTreshold = self.getWhiteThreshold()
         self.whiteThreshold = self.getWhiteThreshold(self.threshImg)
@@ -116,32 +140,37 @@ class sprocketHole:
         oldcY = self.cY
         oldrX = self.rX
         self.area = area_size
+        minDist = self.dy
         for l in range(lenContours):
             cnt = contours[l]
             area = cv2.contourArea(cnt)
-            #print((l, area))
             if area > area_size:
-                locateHoleResult = 0 # hole found
-                self.area = area
+                x,y,w,h = cv2.boundingRect(cnt)
+                print(f"{l} {area} {cv2.boundingRect(cnt)} {y} {self.midy} {abs(self.midy-y)}")
+                dist = abs(self.midy-y)
                 if area > 3*area_size:
                     locateHoleResult = 2 # very large contour found == no film
-                resultImage = cv2.cvtColor(self.imageHoleCrop, cv2.COLOR_GRAY2BGR)
-                cv2.drawContours(resultImage, cnt, -1, (0,255,0), 3)
-                cv2.imwrite(os.path.expanduser("~/contours.png"),resultImage)
-                break
+                elif dist<minDist:
+                    locateHoleResult = 0 # hole found
+                    self.area = area
+                    bestCont = cnt
         if locateHoleResult == 0:      
-            M = cv2.moments(cnt)
+            M = cv2.moments(bestCont)
             # print(M)
             try:
-                self.cX = int(M["m10"] / M["m00"])+self.frame.holeCrop.x1
+                self.cX = int(M["m10"] / M["m00"])+self.threshX1
                 self.cY = int(M["m01"] / M["m00"])+self.frame.holeCrop.y1
-                x,y,w,h = cv2.boundingRect(cnt)
-                self.rX = x+w+self.frame.holeCrop.x1
+                x,y,w,h = cv2.boundingRect(bestCont)
+                self.rX = x+w+self.threshX1
                 #holeDist = 225
                 #if cY > holeDist : # distance between holes
                 #    print("cY=", cY)
                 #    locateHoleResult = 4 # 2. hole found
                 #    cY = cY - holeDist
+                resultImage = cv2.cvtColor(self.imageHoleCrop, cv2.COLOR_GRAY2BGR)
+                cv2.drawContours(resultImage, cnt, -1, (0,255,0), 3)
+                cv2.imwrite(os.path.expanduser("~/contours.png"),resultImage)
+                #break
             except ZeroDivisionError:
                 print("no center")
                 locateHoleResult = 3 # no center
@@ -158,23 +187,23 @@ class sprocketHole:
         #print("cY=", self.cY, "oldcY=", oldcY, "locateHoleResult=", locateHoleResult)
         print(f"result {locateHoleResult} cX {self.cX} cY {self.cY} rX {self.rX}")
         p1 = (0, self.cY) 
-        p2 = (self.frame.holeCrop.x2-self.frame.holeCrop.x1, self.cY)
+        p2 = (self.threshX2-self.threshX1, self.cY)
         # print(p1, p2)
         cv2.line(resultImage, p1, p2, (0, 255, 0), 3)
-        p1 = (int(self.cX), 0) 
-        p2 = (int(self.cX), self.frame.holeCrop.y2-self.frame.holeCrop.y1) 
+        #p1 = (int(self.cX-self.threshX1), 0) 
+        #p2 = (int(self.cX-self.threshX1), self.frame.holeCrop.y2-self.frame.holeCrop.y1) 
         #print(p1, p2)
-        cv2.line(resultImage, p1, p2, (0, 255, 0), 3)
-        p1 = (int(self.rX), 0) 
-        p2 = (int(self.rX), self.frame.holeCrop.y2-self.frame.holeCrop.y1) 
+        #cv2.line(resultImage, p1, p2, (0, 255, 0), 3)
+        p1 = (int(self.rX-self.threshX1), 0) 
+        p2 = (int(self.rX-self.threshX1), self.frame.holeCrop.y2-self.frame.holeCrop.y1) 
         #print(p1, p2)
         cv2.line(resultImage, p1, p2, (0, 255, 0), 3)
         # show target midy
         p1 = (0, self.midy) 
-        p2 = (self.frame.holeCrop.x2-self.frame.holeCrop.x1, self.midy)
+        p2 = (self.threshX2-self.threshX1, self.midy)
         cv2.line(resultImage, p1, p2, (0, 255, 0), 1)  # black line
         p1 = (0, self.midy+1)
-        p2 = (self.frame.holeCrop.x2-self.frame.holeCrop.x1, self.midy+1)
+        p2 = (self.threshX2-self.threshX1, self.midy+1)
         cv2.line(resultImage, p1, p2, (255, 255, 255), 1) # white line
         cv2.imwrite(os.path.expanduser("~/thresh_output.png"),resultImage)
         cv2.imwrite(self.resultImagePath, resultImage)

@@ -33,7 +33,6 @@ class Ini:
             Film.filmFolder = config[Ini.paths]['film_folder']
             Film.scanFolder = config[Ini.paths]['scan_folder']
             Film.cropFolder = config[Ini.paths]['crop_folder']
-            print(f"{Film.scanFolder}")
             Camera.ViewWidth = config[Ini.camera].getint('view_width')
             Camera.ViewHeight = config[Ini.camera].getint('view_height')
 
@@ -176,7 +175,7 @@ class Frame:
     s8_sprocketWidth = 0.05
     s8_midx = 64
     s8_midy = 240
-    r8_frameCrop = Rect("r8_frame_crop", 146, 28, 146+814, 28+565)
+    r8_frameCrop = Rect("r8_frame_crop", 15, 16, 15+1323, 16+947)
     r8_holeCrop = Rect("r8_hole_crop", 90, 0, 240, 276)
     r8_stdSprocketHeight = 0.1
     r8_sprocketWidth = 0.13
@@ -216,14 +215,16 @@ class Frame:
             self.frameCrop = Frame.s8_frameCrop
             self.ratio = Frame.s8_ratio
             self.sprocketWidth = Frame.s8_sprocketWidth
+            self.midy = int(Frame.s8_midy*self.ScaleFactor)
+        
         else:
             self.stdSprocketHeight = Frame.r8_stdSprocketHeight
             self.holeCrop = Rect("hole_crop", int(Frame.r8_holeCrop.x1*self.ScaleFactor), 0, int(Frame.r8_holeCrop.x2*self.ScaleFactor), self.dy-1)
             self.frameCrop = Frame.r8_frameCrop
             self.ratio = Frame.r8_ratio
             self.sprocketWidth = Frame.r8_sprocketWidth
+            self.midy = int(Frame.r8_midy*self.ScaleFactor)
         self.midx = 115*self.ScaleFactor   # always overwitten 
-        self.midy = self.dy//2#240*self.ScaleFactor 
         self.cX = self.midx 
         self.cY = self.midy
         self.sprocketHeight = 0    
@@ -240,6 +241,7 @@ class Frame:
         """Convert from an opencv image to QPixmap"""
         rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
         h, w, ch = rgb_image.shape
+        print(f"{rgb_image.shape}")
         bytes_per_line = ch * w
         convert_to_Qt_format = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
         if dest is None:
@@ -256,7 +258,8 @@ class Frame:
         
     def getHoleCrop(self) :
         #cv2.imwrite(os.path.expanduser("~/getHoleCrop.png"), self.imageHoleCrop)
-        self.imageHoleCrop = cv2.resize(cv2.imread(self.resultImagePath), (0,0), fx=1/self.ScaleFactor, fy=self.ScaleFactor)
+        self.imageHoleCrop = cv2.resize(cv2.imread(self.resultImagePath), (0,0), fx=1/self.ScaleFactor, fy=1/self.ScaleFactor)
+        #self.imageHoleCrop = cv2.resize(cv2.imread(self.resultImagePath), (0,0), fx=1/10, fy=1/10)
         return self.convert_cv_qt(self.imageHoleCrop)
 
     def getHistogram(self):
@@ -293,226 +296,9 @@ class Frame:
         self.calcCrop()
         self.imageCropped = self.image[self.p1[1]:self.p2[1], self.p1[0]:self.p2[0]]   
 
-    def findSprocketLeft(self):
-        returnX1 = 0
-        returnX2 = 0
-        searchRange = 450 #may need to adjust with image size
-        ratioThresh = 0.1 #may need to adjust with film format
-        #searchStart = int(self.holeCrop.x1-searchRange)
-        searchStart = int(0.1*self.dx)#int(0.05*self.dx) #to the right of left edge of films
-        searchEnd = int(searchStart+searchRange)
-        step = int(10*self.ScaleFactor)
-        countSteps = 0 #check that we're not taking too long
-        hMin = 0
-        sMin = 0
-        vMin = 54
-        hMax = 179
-        sMax = 85
-        vMax = 255
-        lower = np.array([hMin, sMin, vMin])
-        upper = np.array([hMax, sMax, vMax])
-        hsv = cv2.cvtColor(self.image, cv2.COLOR_BGR2HSV)
-        self.thresh = cv2.inRange(hsv, lower, upper)
-        for x1 in range(searchStart,searchEnd,step):
-            strip = self.thresh[:,int(x1):int(x1+step),]
-            ratio = float(np.sum(strip == 255)/(self.dx*step))
-            print(f"x {x1} ratio {ratio} {np.sum(strip == 255)} dx {self.dx*step}")
-            p1 = (int(x1), int(0)) 
-            p2 = (int(x1), int(self.dy)) 
-            cv2.line(self.image, p1, p2, (255, 255, 255), 3) #Vert
-            countSteps+=1
-            if ratio>ratioThresh:
-                #cv2.imwrite(os.path.expanduser("~/testx.png"), self.thresh)
-                print(f"Final x {x1} ratio {ratio} steps {countSteps}")
-                returnX1 = x1+(step/2)
-                break
-        return returnX1
-
-    def findSprocketRight(self, x1, x2, sprocketHeight, cY):
-        if sprocketHeight==0:
-            return 0
-        rx1 = x1
-        rx2 = x1 + 1.5*(x2-x1)
-        #rx2 = x1 + 2*self.sprocketWidth*self.dx
-        ry = int(0.8*sprocketHeight)
-        ry1 = cY-ry//2
-        ry2 = cY+ry//2
-        print(f"strip dimensions format {self.format} ry1 {ry1} ry2 {ry2} rx1 {rx1} rx2 {rx2} - cY {cY} shape {self.image.shape}")
-        horizontalStrip = self.image[int(ry1):int(ry2),int(rx1):int(rx2),:]
-        horizontalEdges = np.absolute(cv2.Sobel(horizontalStrip,cv2.CV_64F,1,0,ksize=3))
-        histoHori       = np.mean(horizontalEdges,axis=(0,2))
-        smoothedHori    = cv2.GaussianBlur(histoHori,(1,5),0)
-        maxPeakValueH   = smoothedHori.max()
-        thresholdHori   = Frame.innerThresh*maxPeakValueH
-        cv2.imwrite(os.path.expanduser("~/hori.png"), horizontalStrip)
-        cv2.imwrite(os.path.expanduser("~/imgcheck.png"), self.image)
-        #cv2.imwrite(os.path.expanduser("~/horicheck.png"), self.image[int(ry1):int(ry2),int(rx1):int(rx2),:])#self.image[0:1858,456:848,:])
-        plt.plot(smoothedHori)
-        plt.axhline(thresholdHori, color='cyan', linewidth=1)
-        plt.savefig(os.path.expanduser("~/horihist.png"))
-        plt.clf()
-        triggered = False
-        for x in range(int((x2-x1)//2),len(smoothedHori)):
-            if smoothedHori[x]<thresholdHori:
-                triggered = True
-            if smoothedHori[x]>thresholdHori and triggered:         
-                cX = x+x1             
-                return cX
-        return 0 
-
-    def findSprocket(self):
-        y1=0
-        y2=int(self.dy-1)
-        if len(self.smoothedHisto)==0:
-            return None
-        peaks = []
-        innerHigh = 0
-        innerLow = 0
-        outerHigh = y2
-        outerLow = y1
-        minPeakValue  = self.smoothedHisto[y1:y2].min()
-        maxPeakValue  = self.smoothedHisto[y1:y2].max()
-        valueRange = (maxPeakValue-minPeakValue)*0.02
-        self.innerThreshold = Frame.innerThresh*maxPeakValue
-        print(f"Range size {valueRange:.02f} min {minPeakValue:.02f} max {minPeakValue+valueRange:.02f}")
-        lowRanges = []
-        for y in range(y1,y2):
-            if self.smoothedHisto[y]<minPeakValue+valueRange and self.smoothedHisto[y]>=minPeakValue:
-                peaks.append(y)
-            else:
-                if len(peaks)>100:
-                    print(f"values caught {len(peaks)} mid {peaks[len(peaks)//2]}")
-                    lowRanges.append(peaks)
-                    peaks = []
-            if self.smoothedHisto[y]==minPeakValue:
-                self.trough=y
-        print(f"Found {len(lowRanges)} ranges that could be sprocket holes")
-        plt.plot(self.smoothedHisto)
-        midPoint=0
-        for r in lowRanges:
-            plt.axvline(r[0], color='cyan', linewidth=1)
-            plt.axvline(r[len(r)-1], color='cyan', linewidth=1)
-            midPoint = r[len(r)//2]
-            plt.axvline(midPoint, color='red', linewidth=1)
-            print(f"Found potential sprocket at {midPoint} using low range which is {(self.midy-midPoint)/self.dy:.2f} from the centre {self.midy}")
-            if abs((self.midy-midPoint))/self.dy<0.2:
-                print(f"Using range of size {len(r)} and midPoint {midPoint}")
-                break
-        if not midPoint==0: #I have a valid range so find the limits of the sprocket hole
-            innerLow = midPoint
-            outerHigh = int(midPoint+(1.5*self.stdSprocketHeight*self.dy))-1
-            outerLow = int(midPoint-(1.5*self.stdSprocketHeight*self.dy))+1
-            print(f"searchCenter {midPoint} outerLow {outerLow} outerHigh {outerHigh} self.stdSprocketHeight*self.dy {self.stdSprocketHeight*self.dy} self.stdSprocketHeight {self.stdSprocketHeight}")
-            for y in range(midPoint,outerLow,-1):
-                if self.smoothedHisto[y]>self.innerThreshold:
-                    innerLow = y
-                    break
-            innerHigh = midPoint
-            for y in range(midPoint,outerHigh):
-                if self.smoothedHisto[y]>self.innerThreshold:
-                    innerHigh = y
-                    break
-        plt.axvline((innerHigh+innerLow)//2, color='blue', linewidth=1)
-        plt.axvline(midPoint, color='orange', linewidth=1)
-        plt.axvline(innerHigh, color='purple', linewidth=1)
-        plt.axvline(innerLow, color='purple', linewidth=1)
-        plt.axvline(outerHigh, color='green', linewidth=1)
-        plt.axvline(outerLow, color='green', linewidth=1)
-        plt.axhline(self.innerThreshold, color='cyan', linewidth=1)
-        plt.axvline(self.trough, color='pink', linewidth=1)
-        plt.xlim([0, self.dy])
-        plt.savefig(os.path.expanduser("~/my_cv2hist.png"))
-        plt.xlim(outerLow,outerHigh)
-        plt.savefig(Frame.hist_path)#os.path.expanduser("~/my_cv2hist_lim.png"))
-        plt.clf()
-        return innerHigh, innerLow
-
     def locateSprocketHole(self):
-        print(f"processing")
         self.locateHoleResult, self.cY, self.cX = self.sprocketHole.process()#cX rX
         return self.locateHoleResult
-
-    def locateSprocketHoleOld(self):
-        # Based on https://github.com/cpixip/sprocket_detection
-        print(f"locateSprocketHole {self.image.shape} {self.imagePathName}")
-        filterSize = 25                 # smoothing kernel - leave it untouched
-        midy = self.midy
-        self.peaks = []
-        self.smoothedHisto = []
-        x1 = self.findSprocketLeft()
-        if not x1:
-            #Failed to find left edge - save some debug info
-            cv2.imwrite(os.path.expanduser("~/a.png"), self.image)
-            cv2.imwrite(os.path.expanduser("~/thresh.png"), self.thresh)
-            locateHoleResult = 5 #can't find left edge
-            print(f"Setting result to 5 - can't find left edge {self.imagePathName}")
-            ##raise Exception(f"Setting result to 5 - can't find left edge {self.imagePathName}")
-        else:
-            x2 = x1+int(self.sprocketWidth*self.dx)#*0.8
-            self.imageHoleCrop = self.image[:,int(x1):int(x1+1.5*(x2-x1)),:] #bigger so we can see
-            self.imageHoleCropHide = self.image[:,int(x1):int(x2),:] #For processing only
-            sprocketEdges = np.absolute(cv2.Sobel(self.imageHoleCropHide,cv2.CV_64F,0,1,ksize=3))
-            histogram     = np.mean(sprocketEdges,axis=(1,2))
-            self.smoothedHisto = cv2.GaussianBlur(histogram,(1,filterSize),0)
-        print(f"New search for sprocket x1")
-        innerHigh, innerLow = self.findSprocket()
-        self.sprocketHeight = innerHigh-innerLow
-        cY = (innerHigh+innerLow)//2
-        sprocketHeightTol = 0.04
-        print(f"Using sprocket {self.sprocketHeight} in range {(self.stdSprocketHeight-sprocketHeightTol)*self.dy:.2f} to {(self.stdSprocketHeight+sprocketHeightTol)*self.dy:.2f}")
-        if self.sprocketHeight==0:
-            print(f"Invalid sprocket size zero {self.sprocketHeight}")
-            locateHoleResult = 2
-            cv2.imwrite(os.path.expanduser("~/2.png"), self.image)
-            ###raise Exception(f"Setting result to 2 - can't find valid sprocket range for {self.imagePathName}")
-        elif self.sprocketHeight>(self.stdSprocketHeight-sprocketHeightTol)*self.dy and self.sprocketHeight<(self.stdSprocketHeight+sprocketHeightTol)*self.dy:
-            print(f"Valid sprocket size {self.sprocketHeight}")
-            locateHoleResult = 0 #Sprocket size within range
-        else:
-            print(f"Invalid sprocket size {self.sprocketHeight}")
-            self.sprocketHeight = 0
-            locateHoleResult = 1
-            cv2.imwrite(os.path.expanduser("~/image.png"), self.image) 
-            cv2.imwrite(os.path.expanduser("~/thresh.png"), self.thresh)
-            ###raise Exception(f"Setting result to 1 - sprocket out of range for {self.imagePathName}")
-        cX = self.findSprocketRight(x1, x2, self.sprocketHeight, cY)
-        #oldcX = self.cX
-        oldcY = self.cY
-        if not cX:
-            locateHoleResult = 3 #Right edge not detected
-            print("Setting result to 3 - right edge not detected")
-            ###raise Exception(f"Setting result to 3 - can't find right edge for {self.imagePathName}")
-        else:
-            self.cX = cX
-            self.cY = cY
-
-        #Markup crosshairs
-        print("cY=", self.cY, "oldcY=", oldcY, "locateHoleResult=", locateHoleResult)
-        p1 = (int(x2-x1), 0) 
-        p2 = (int(x2-x1), self.dy-1) 
-        #print(f"Vertical line points {p1} {p2}")
-        cv2.line(self.imageHoleCrop, p1, p2, (255, 0, 0), 3) #View X1 Blue
-        p1 = (0, int(self.cY))
-        p2 = (int(self.cX-x1), int(self.cY))
-        #print(f"Horizontal line points {p1} {p2}")
-        cv2.line(self.imageHoleCrop, p1, p2, (0, 0, 255), 3) #Horiz
-        p1 = (int(self.cX-x1), int(innerLow)) 
-        p2 = (int(self.cX-x1), int(innerHigh)) 
-        #print(f"Vertical line points {p1} {p2}")
-        cv2.line(self.imageHoleCrop, p1, p2, (0, 0, 255), 3) #Vert
-        p1 = (0, int(midy)) 
-        p2 = (int(self.cX-x1), int(midy))
-        #print(f"MidY line points {p1} {p2}")
-        cv2.line(self.imageHoleCrop, p1, p2, (0, 0, 0), 3)  # black line
-        p1 = (0, int(midy+3))
-        p2 = (int(self.cX-x1), int(midy+3))
-        cv2.line(self.imageHoleCrop, p1, p2, (255, 255, 255), 3) # white line
-        self.imageHoleCrop = cv2.resize(self.imageHoleCrop, (0,0), fx=1/self.ScaleFactor, fy=1/self.ScaleFactor)
-        cv2.imwrite(os.path.expanduser("~/sprocketStrip.png"), self.imageHoleCrop)
-        cv2.imwrite(os.path.expanduser("~/image.png"), self.image) 
-        cv2.imwrite(os.path.expanduser("~/thresh.png"), self.thresh)
-        self.locateHoleResult = locateHoleResult
-        return locateHoleResult
            
 class Film:
     format = "s8"
