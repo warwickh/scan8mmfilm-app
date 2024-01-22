@@ -48,7 +48,7 @@ for model_layer in vgg16.layers:
 
 if __name__ == "__main__":
     #folder = "C:\\Users\\F98044d\\Downloads\\dup_test"
-    folder = os.path.expanduser("~/scanframes/crop/roll4a")
+    folder = os.path.expanduser("~/scanframes/crop/roll6")
     os.chdir(folder)
     fileList = sorted(glob.glob('*.jpg'))
     lastImage = None
@@ -59,7 +59,7 @@ if __name__ == "__main__":
           currentImage = os.path.join(folder,fn)
           if lastImage:
                 similarity_score = get_similarity_score(lastImage, currentImage)
-                if similarity_score>0.9840:
+                if similarity_score>0.9950:
                     outpath = os.path.expanduser(f"~/dups/{os.path.basename(lastImage)}_{fn}_{float(similarity_score):.04f}.png")
                     cv2.imwrite(outpath, combine_images(lastImage, currentImage))
                     logFile.write(f"{lastImage} {currentImage} {similarity_score} \n")
