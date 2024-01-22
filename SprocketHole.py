@@ -151,6 +151,7 @@ class sprocketHole:
                 if area > 3*area_size:
                     locateHoleResult = 2 # very large contour found == no film
                 elif dist<minDist:
+                    print(f"{dist} is less than {minDist} so using it")
                     locateHoleResult = 0 # hole found
                     self.area = area
                     bestCont = cnt
