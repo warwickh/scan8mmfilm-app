@@ -1,7 +1,7 @@
 import numpy as np 
 from PIL import Image
 from tensorflow.keras.preprocessing import image
-
+import csv
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
@@ -52,19 +52,25 @@ if __name__ == "__main__":
     os.chdir(folder)
     fileList = sorted(glob.glob('*.jpg'))
     lastImage = None
-    with open(os.path.expanduser(f"~/dups/log.txt"),'w') as logFile:
-       
-      for fn in fileList:
-          print(f"{fn}")
-          currentImage = os.path.join(folder,fn)
-          if lastImage:
-                similarity_score = get_similarity_score(lastImage, currentImage)
-                if similarity_score>0.9950:
-                    outpath = os.path.expanduser(f"~/dups/{os.path.basename(lastImage)}_{fn}_{float(similarity_score):.04f}.png")
-                    cv2.imwrite(outpath, combine_images(lastImage, currentImage))
-                    logFile.write(f"{lastImage} {currentImage} {similarity_score} \n")
-                else:
-                    lastImage = currentImage
-                print(f"similarity score {similarity_score}")
-          else:
-             lastImage = currentImage
+    logPath = os.path.expanduser(f"~/dups/log.csv")
+    if not os.path.exists(logPath):
+      with open(logPath,'w') as logFile:
+        for fn in fileList:
+            print(f"{fn}")
+            currentImage = os.path.join(folder,fn)
+            if lastImage:
+                  similarity_score = get_similarity_score(lastImage, currentImage)
+                  if similarity_score>0.950:
+                      outpath = os.path.expanduser(f"~/dups/{os.path.basename(lastImage)}_{fn}_{float(similarity_score):.04f}.png")
+                      cv2.imwrite(outpath, combine_images(lastImage, currentImage))
+                      logFile.write(f"{lastImage},{currentImage},{similarity_score} \n")
+                  else:
+                      lastImage = currentImage
+                  print(f"similarity score {similarity_score}")
+            else:
+              lastImage = currentImage
+    else:
+       with open(logPath,'r') as logFile:
+          reader_obj = csv.reader(logFile)
+          for row in reader_obj: 
+              print(row)

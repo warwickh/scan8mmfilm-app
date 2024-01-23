@@ -126,6 +126,11 @@ class sprocketHole:
         # the image crop with the sprocket hole 
         localImg = self.image.copy()
         #cv2.imwrite(os.path.expanduser("~/contoursb4cut.png"),img)
+
+        x1 = int(self.findSprocketLeft() - (20*self.ScaleFactor))
+        x2 = int(x1 + (self.sprocketWidth*self.dx) + (40*self.ScaleFactor))
+        self.threshX1 = x1
+        self.threshX2 = x2
         print(f"Thresh checking boundaries x1 {self.threshX1} x2 {self.threshX2} y1 {self.frame.holeCrop.y1} y2 {self.frame.holeCrop.y2}")
         img = localImg[self.frame.holeCrop.y1:self.frame.holeCrop.y2, self.threshX1:self.threshX2]
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -151,7 +156,6 @@ class sprocketHole:
                 if area > 3*area_size:
                     locateHoleResult = 2 # very large contour found == no film
                 elif dist<minDist:
-                    print(f"{dist} is less than {minDist} so using it")
                     locateHoleResult = 0 # hole found
                     self.area = area
                     bestCont = cnt
@@ -243,7 +247,7 @@ class sprocketHole:
             cv2.line(self.image, p1, p2, (255, 255, 255), 3) #Vert
             countSteps+=1
             if ratio>ratioThresh:
-                #cv2.imwrite(os.path.expanduser("~/testx.png"), self.thresh)
+                cv2.imwrite(os.path.expanduser("~/testx.png"), self.image)
                 print(f"Final x {x1} ratio {ratio} steps {countSteps}")
                 returnX1 = x1+(step/2)
                 break
