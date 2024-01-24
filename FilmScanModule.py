@@ -331,47 +331,7 @@ class Frame:
         maxPeakValue   = smoothedHisto[y1:y2].max()
         minPeakValue   = smoothedHisto[y1:y2].min()
         outerThreshold = Frame.outerThresh*maxPeakValue
-        innerThreshold = Frame.innerThresh*maxPeakValue
-        
-        #testing canny
-        
-        #img = cv2.imread('messi5.jpg',0)
-        img = self.imageHoleCropHide
-        cv2.imwrite(os.path.expanduser("~/colour.png"), img)
-        img = cv2.cvtColor(self.imageHoleCropHide, cv2.COLOR_BGR2GRAY)
-        cv2.imwrite(os.path.expanduser("~/gray.png"), img)
-            
-        edges = cv2.Canny(img,25,255)
-
-        #plt.subplot(121),plt.imshow(img,cmap = 'gray')
-        #plt.title('Original Image'), plt.xticks([]), plt.yticks([])
-        #plt.subplot(122),plt.imshow(edges,cmap = 'gray')
-        #plt.title('Edge Image'), plt.xticks([]), plt.yticks([])
-        cv2.imwrite(os.path.expanduser("~/edges.png"), edges)
-        #plt.show()
-        cannyprocketEdges = np.absolute(edges)
-        cannyHistogram     = np.mean(cannyprocketEdges,axis=(1))
-        cannySmoothedHisto = cv2.GaussianBlur(cannyHistogram,(1,filterSize),0)
-        plt.clf()
-        
-        plt.plot(cannySmoothedHisto)
-        #plt.axvline(cY, color='blue', linewidth=1)
-        #plt.axvline(searchCenter, color='orange', linewidth=1)
-        #plt.axvline(innerHigh, color='green', linewidth=1)
-        #plt.axvline(innerLow, color='red', linewidth=1)
-        #plt.axvline(outerHigh, color='purple', linewidth=1)
-        #plt.axvline(outerLow, color='gray', linewidth=1)
-        #plt.axhline(innerThreshold, color='cyan', linewidth=1)
-        #plt.axhline(outerThreshold, color='olive', linewidth=1)
-        #plt.axvline(trough, color='pink', linewidth=1)
-        #plt.xlim([0, dy])
-        #plt.show()
-        plt.savefig(os.path.expanduser("~/my_cannyhist_full.png"))
-        plt.clf()
-        
-        
-        
-        
+        innerThreshold = Frame.innerThresh*maxPeakValue       
         outerLow = y1
         #thresh_vals = [outerThreshold+10, outerThreshold+5, outerThreshold, outerThreshold-5, outerThreshold-10]
         thresh_vals = [outerThreshold, outerThreshold-5, outerThreshold+5]
