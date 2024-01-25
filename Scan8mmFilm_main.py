@@ -187,7 +187,7 @@ class Window(QMainWindow, Ui_MainWindow):
             if self.frame is not None:
                 self.showScan()
             if picamera2_present:   
-                self.motorStart()
+                self.scannerStart()
                 self.startScanFilm()
         else:
             self.startCropAll()
@@ -213,7 +213,7 @@ class Window(QMainWindow, Ui_MainWindow):
         if self.rbtnScan.isChecked():
             if picamera2_present: 
                 self.enableButtons(busy=True)  
-                self.motorStart()
+                #self.motorStart()
                 pidevi.spoolFwd(0.02)
                 pidevi.stepCw(self.film.stepsPrFrame)
                 #pidevi.spoolStart()
@@ -227,7 +227,7 @@ class Window(QMainWindow, Ui_MainWindow):
         if self.rbtnScan.isChecked():
             if picamera2_present: 
                 self.enableButtons(busy=True)  
-                self.motorStart()
+                #self.motorStart()
                 pidevi.spoolBack(0.02)
                 pidevi.stepCcw(self.film.stepsPrFrame)
                 #pidevi.spoolStart()
@@ -263,7 +263,7 @@ class Window(QMainWindow, Ui_MainWindow):
         if self.rbtnScan.isChecked():
             if picamera2_present:
                 self.enableButtons(busy=True)  
-                self.motorStart()
+                #self.motorStart()
                 pidevi.spoolBack(0.05)
                 pidevi.stepCcw(4)
                 #pidevi.spoolStart()
@@ -280,7 +280,7 @@ class Window(QMainWindow, Ui_MainWindow):
         if self.rbtnScan.isChecked():
             if picamera2_present:
                 self.enableButtons(busy=True)  
-                self.motorStart()
+                #self.motorStart()
                 pidevi.spoolFwd(0.05)
                 pidevi.stepCw(4)  
                 #pidevi.spoolStart()
@@ -384,11 +384,11 @@ class Window(QMainWindow, Ui_MainWindow):
             
     # Process or timer actions ---------------------------------------------------------------------------------------------------------
 
-    def motorTimeout(self) :
-        self.motorTicks = self.motorTicks + 1 
+    #def motorTimeout(self) :
+    #    self.motorTicks = self.motorTicks + 1 
         #pidevi.spoolStart()
-        if self.motorTicks > 3 :
-            self.motorStop()
+    #    if self.motorTicks > 3 :
+    #        self.motorStop()
         
     def capture_done(self,job):
         image = picam2.wait(job)
@@ -401,13 +401,13 @@ class Window(QMainWindow, Ui_MainWindow):
         #self.lblHist.setPixmap(cv2.resize(self.frame.getHistogram(), (0,0), fx=0.5, fy=0.5))
         self.lblHist.setPixmap(self.frame.getHistogram())
         self.updateInfoPanel()
-        self.motorTicks = 0   
+        #self.motorTicks = 0   
         if self.scanDone :
             self.enableButtons(busy=False)
             
     def scanProgress(self, info, i, frame ):
         self.lblScanInfo.setText(info)
-        self.motorTicks = 0   
+        #self.motorTicks = 0   
         if frame is not None:
             if self.lblImage.isVisible():
                 self.lblImage.setPixmap(frame.getCropped())
@@ -452,7 +452,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.showInfo(info + self.resultToText(result))
         self.scanDone = True
         self.enableButtons(busy=False)
-        self.motorStop()
+        #self.motorStop()
+        pidevi.stopScanner()
             
     def filmMessage(self, s):
         self.messageText = self.messageText + "\n" + s
@@ -522,8 +523,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.lblImage.clear()
         self.lblHoleCrop.clear()
         if picamera2_present:
-            self.timer = QTimer()
-            self.timer.timeout.connect(self.motorTimeout)
+            #self.timer = QTimer()
+            #self.timer.timeout.connect(self.motorTimeout)
             self.scanDone = True
             # Start in Scan mode
             if self.rbtnScan.isChecked():
@@ -619,16 +620,16 @@ class Window(QMainWindow, Ui_MainWindow):
 
     # Shared device control ---------------------------------------------------------------------------------------------------------------------------------------
     
-    def motorStart(self):
+    def scannerStart(self):
         if self.rbtnScan.isChecked():
-            self.motorTicks = 0
-            self.timer.start(2000)
+            #self.motorTicks = 0
+            #self.timer.start(2000)
             pidevi.startScanner()
             #pidevi.spoolStart()
 
-    def motorStop(self):
-        pidevi.stepStop()
-        self.timer.stop()
+    #def motorStop(self):
+    #    pidevi.stepStop()
+    #    self.timer.stop()
          
     def startCropAll(self):
         self.enableButtons(busy=True)
@@ -647,7 +648,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.lblScanFrame.setText("")
         self.lblInfo1.setText("")
         self.lblInfo2.setText("")
-        self.motorStart()
+        self.scannerStart()
         self.threadScan = QThreadScan(self.film)
         self.sigToScanTread.connect(self.threadScan.on_source)
         

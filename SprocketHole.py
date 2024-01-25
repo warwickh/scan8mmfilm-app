@@ -12,8 +12,8 @@ class sprocketHole:
                  frame
                  ):
         self.frame = frame
+        print(f"Sprockethole init {self.frame.imagePathName}")
         self.image = self.frame.image.copy()
-        self.imagePathName = self.frame.imagePathName
         self.dy,self.dx,_ = self.image.shape
         self.ScaleFactor = self.dx/640.0
         self.sprocketWidth = self.frame.sprocketWidth
@@ -27,7 +27,7 @@ class sprocketHole:
         self.cY = self.frame.cY
         self.rX = self.cX + self.sprocketWidth
         self.midy = self.frame.midy
-        self.whiteThreshold = 225
+        #self.whiteThreshold = 225
 
 
         #Thresh needs to see all of the hole         
@@ -40,7 +40,13 @@ class sprocketHole:
 
 
         #self.threshImg = os.path.expanduser("~/whitethresh.png")
-        self.threshImg = os.path.join(os.path.dirname(self.imagePathName),"whitethresh.png")
+        if self.frame.imagePathName:
+            self.imagePathName = self.frame.imagePathName
+            self.threshImg = os.path.join(os.path.dirname(self.imagePathName),"whitethresh.png")
+        else:
+            self.imagePathName = None
+            self.threshImg = "whitethresh.png"
+        self.whiteThreshold = self.getWhiteThreshold(self.threshImg)
         self.resultImagePath = self.frame.resultImagePath
         #self.dy,self.dx,_ = self.image.shape
         #self.ScaleFactor = self.dx/640.0
@@ -88,6 +94,7 @@ class sprocketHole:
 
     def getWhiteThreshold(self, threshFilename):
         #threshFilename = os.path.expanduser("~/thresh_test.png")
+        print(f"Checking for threshold file at {threshFilename} {os.path.exists(threshFilename)}")
         if not os.path.exists(threshFilename):
             #testImg = cv2.resize(self.image.copy(), (0,0), fx=1/self.ScaleFactor, fy=1/self.ScaleFactor)
             #testImg = cv2.resize(self.image, (0,0), fx=1/self.ScaleFactor, fy=1/self.ScaleFactor)
@@ -135,7 +142,7 @@ class sprocketHole:
         img = localImg[self.frame.holeCrop.y1:self.frame.holeCrop.y2, self.threshX1:self.threshX2]
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         #self.whiteTreshold = self.getWhiteThreshold()
-        self.whiteThreshold = self.getWhiteThreshold(self.threshImg)
+        #self.whiteThreshold = self.getWhiteThreshold(self.threshImg)
         print(f"Checking white threshold before use {self.whiteThreshold}")
         ret, self.imageHoleCrop = cv2.threshold(img, self.whiteThreshold, 255, 0) 
         contours, hierarchy = cv2.findContours(self.imageHoleCrop, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
@@ -194,7 +201,7 @@ class sprocketHole:
         p1 = (0, self.cY) 
         p2 = (self.threshX2-self.threshX1, self.cY)
         # print(p1, p2)
-        cv2.line(resultImage, p1, p2, (0, 255, 0), 3)
+        cv2.line(resultImage, p1, p2, (0, 0 ,255), 3)
         #p1 = (int(self.cX-self.threshX1), 0) 
         #p2 = (int(self.cX-self.threshX1), self.frame.holeCrop.y2-self.frame.holeCrop.y1) 
         #print(p1, p2)
@@ -202,11 +209,11 @@ class sprocketHole:
         p1 = (int(self.rX-self.threshX1), 0) 
         p2 = (int(self.rX-self.threshX1), self.frame.holeCrop.y2-self.frame.holeCrop.y1) 
         #print(p1, p2)
-        cv2.line(resultImage, p1, p2, (0, 255, 0), 3)
+        cv2.line(resultImage, p1, p2, (0, 0, 255), 3)
         # show target midy
         p1 = (0, self.midy) 
         p2 = (self.threshX2-self.threshX1, self.midy)
-        cv2.line(resultImage, p1, p2, (0, 255, 0), 1)  # black line
+        cv2.line(resultImage, p1, p2, (0, 0, 0), 1)  # black line
         p1 = (0, self.midy+1)
         p2 = (self.threshX2-self.threshX1, self.midy+1)
         cv2.line(resultImage, p1, p2, (255, 255, 255), 1) # white line
@@ -225,6 +232,7 @@ class sprocketHole:
         ratioThresh = 0.1 #may need to adjust with film format
         #searchStart = int(self.holeCrop.x1-searchRange)
         searchStart = int(0.1*self.dx)#int(0.05*self.dx) #to the right of left edge of films
+        searchStart =400
         searchEnd = int(searchStart+searchRange)
         step = int(10*self.ScaleFactor)
         countSteps = 0 #check that we're not taking too long

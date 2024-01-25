@@ -201,14 +201,13 @@ class Frame:
     def __init__(self, imagePathName=None,*,image=None):
         self.imagePathName = imagePathName
         if image is None and imagePathName is not None :
-            self.imagePathName = imagePathName
             self.image = cv2.imread(imagePathName)
         elif image is not None :
             self.image = image
         self.thresh = None
         self.dy,self.dx,_ = self.image.shape
         self.ScaleFactor = self.dx/640.0
-        print(f"Scalefactor {Frame.ScaleFactor}")
+        print(f"Init Frame path {imagePathName} Scalefactor {Frame.ScaleFactor}")
         if Frame.format == "s8":
             self.stdSprocketHeight = Frame.s8_stdSprocketHeight
             self.holeCrop = Rect("hole_crop", int(Frame.s8_holeCrop.x1*self.ScaleFactor), 0, int(Frame.s8_holeCrop.x2*self.ScaleFactor), self.dy-1)
