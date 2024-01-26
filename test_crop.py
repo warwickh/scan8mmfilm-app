@@ -9,7 +9,7 @@ from Crop import crop
 
 if __name__ == "__main__":
     Ini.loadConfig()
-    folder = os.path.expanduser("~/scanframes/bike")
+    folder = os.path.expanduser("~/scanframes/roll3redo")
     #folder = "d:\\roll4e"#os.path.expanduser("~/scanframes/roll3a")
     os.chdir(folder)
     fileList = sorted(glob.glob('*.jpg'))
