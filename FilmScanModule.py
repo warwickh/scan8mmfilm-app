@@ -206,8 +206,10 @@ class Frame:
         if image is None and imagePathName is not None :
             self.imagePathName = imagePathName
             self.image = cv2.imread(imagePathName)
+            self.threshImgPath = os.path.join(os.path.dirname(self.imagePathName),"whitethresh.png")
         elif image is not None :
             self.image = image
+            self.threshImgPath = "whitethresh.png"
         self.dy,self.dx,_ = self.image.shape
         self.ScaleFactor = self.dx/640.0
         print(f"Scalefactor {Frame.ScaleFactor}")
@@ -234,6 +236,7 @@ class Frame:
         #self.histogram = cv2.imread(os.path.expanduser("~/my_cv2hist_lim.png"))
         self.locateHoleResult = 1
         #print(f"init complete {self.__dict__}")
+        self.whiteThreshold = self.getWhiteThreshold(self.threshImgPath)
         
     def convert_cv_qt(self, cv_img, dest=None):
         """Convert from an opencv image to QPixmap"""
@@ -289,27 +292,45 @@ class Frame:
         self.calcCrop()
         self.imageCropped = self.image[self.p1[1]:self.p2[1], self.p1[0]:self.p2[0]]
      
-    def getWhiteThreshold(self, imageSmall):
-        img = imageSmall[Frame.whiteCrop.y1:Frame.whiteCrop.y2, Frame.whiteCrop.x1:Frame.whiteCrop.x2]
+    def getWhiteThreshold(self, threshFilename):
+        #threshFilename = os.path.expanduser("~/thresh_test.png")
+        print(f"Checking for threshold file at {threshFilename} {os.path.exists(threshFilename)}")
+        #if not os.path.exists(threshFilename):
+            #testImg = cv2.resize(self.image.copy(), (0,0), fx=1/self.ScaleFactor, fy=1/self.ScaleFactor)
+            #testImg = cv2.resize(self.image, (0,0), fx=1/self.ScaleFactor, fy=1/self.ScaleFactor)
+        #    testImg = self.image.copy()
+            #cv2.imwrite("d:\\howzitlook.png", testImg)
+            #testImg = cv2.resize(testImg, (0,0), fx=1/self.ScaleFactor, fy=1/self.ScaleFactor)
+        #    cv2.namedWindow("Resized_Window", cv2.WINDOW_NORMAL) 
+        #    cv2.resizeWindow("Resized_Window", 800, 600)
+        #    roi=cv2.selectROI("Resized_Window", testImg)
+        #    cropped = testImg[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])]
+        #    cv2.imwrite(threshFilename, cropped)
+        #    cv2.destroyAllWindows()
+        img = cv2.imread(threshFilename)
+        dy,dx,_ = img.shape
+        #img = imageSmall[self.frame.whiteCrop.y1:self.frame.whiteCrop.y2, self.frame.whiteCrop.x1:self.frame.whiteCrop.x2]
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         planes = cv2.split(img)
         histSize = 256 #  [Establish the number of bins]
         histRange = (0, 256) # Set the range
-        hist = cv2.calcHist(planes, [0], None, [histSize], histRange, accumulate=False)    
-        okPct = (Frame.whiteCrop.y2-Frame.whiteCrop.y1)*(Frame.whiteCrop.x2-Frame.whiteCrop.x1)/100.0*5
+        hist = cv2.calcHist(planes, [0], None, [histSize], histRange, accumulate=False) 
+        okPct = dy*dx/100.0*5
+        #okPct = (self.frame.whiteCrop.y2-self.frame.whiteCrop.y1)*(self.frame.whiteCrop.x2-self.frame.whiteCrop.x1)/100.0*5
         wco = 220 # Default value - will work in most cases
         for i in range(128,256) :
             if hist[i] > okPct :
                 wco = i-8 #6
                 break
-        return wco        
+        print(f"Found threshold {wco} from {threshFilename}")
+        return wco     
 
     # Based on https://github.com/cpixip/sprocket_detection
     # initial testing had issues with selecting point between 2 holes TODO
     # Added initial range check
     # Return values:
     # 0: hole found, 1: hole not found, 2: hole to large, 3: no center
-    def locateSprocketHole(self):
+    def locateSprocketHoleOld(self):
         print(f"locateSprocketHole {self.image.shape}")
         #thresholds = [0.5,0.3]          # edge thresholds; first one higher, second one lower
         filterSize = 25                 # smoothing kernel - leave it untouched
@@ -509,7 +530,195 @@ class Frame:
            
         self.locateHoleResult = locateHoleResult
         return locateHoleResult
-            
+
+#=========================================================================
+    def findSprocketLeft(self):
+        returnX1 = 0
+        returnX2 = 0
+        searchRange = 450 #may need to adjust with image size
+        ratioThresh = 0.1 #may need to adjust with film format
+        #searchStart = int(self.holeCrop.x1-searchRange)
+        searchStart = int(0.1*self.dx)#int(0.05*self.dx) #to the right of left edge of films
+        searchStart =450 #TODO
+        searchEnd = int(searchStart+searchRange)
+        step = int(10*self.ScaleFactor)
+        countSteps = 0 #check that we're not taking too long
+        hMin = 0
+        sMin = 0
+        vMin = 54
+        hMax = 179
+        sMax = 85
+        vMax = 255
+        lower = np.array([hMin, sMin, vMin])
+        upper = np.array([hMax, sMax, vMax])
+        hsv = cv2.cvtColor(self.image, cv2.COLOR_BGR2HSV)
+        self.thresh = cv2.inRange(hsv, lower, upper)
+        hsv = None
+        for x1 in range(searchStart,searchEnd,step):
+            strip = self.thresh[:,int(x1):int(x1+step),]
+            ratio = float(np.sum(strip == 255)/(self.dx*step))
+            print(f"x {x1} ratio {ratio} {np.sum(strip == 255)} dx {self.dx*step}")
+            p1 = (int(x1), int(0)) 
+            p2 = (int(x1), int(self.dy)) 
+            cv2.line(self.image, p1, p2, (255, 255, 255), 3) #Vert
+            countSteps+=1
+            if ratio>ratioThresh:
+                cv2.imwrite(os.path.expanduser("~/testx.png"), self.image)
+                print(f"Final x {x1} ratio {ratio} steps {countSteps}")
+                returnX1 = x1+(step/2)
+                break
+        return returnX1
+
+    def findSprocketRight(self, x1, x2, sprocketHeight, cY):
+        if sprocketHeight==0:
+            return 0
+        rx1 = x1
+        rx2 = x1 + 1.5*(x2-x1)
+        #rx2 = x1 + 2*self.sprocketWidth*self.dx
+        ry = int(0.8*sprocketHeight)
+        ry1 = cY-ry//2
+        ry2 = cY+ry//2
+        print(f"strip dimensions format {self.format} ry1 {ry1} ry2 {ry2} rx1 {rx1} rx2 {rx2} - cY {cY} shape {self.image.shape}")
+        horizontalStrip = self.image[int(ry1):int(ry2),int(rx1):int(rx2),:]
+        horizontalEdges = np.absolute(cv2.Sobel(horizontalStrip,cv2.CV_64F,1,0,ksize=3))
+        histoHori       = np.mean(horizontalEdges,axis=(0,2))
+        smoothedHori    = cv2.GaussianBlur(histoHori,(1,5),0)
+        maxPeakValueH   = smoothedHori.max()
+        thresholdHori   = self.frame.innerThresh*maxPeakValueH
+        cv2.imwrite(os.path.expanduser("~/hori.png"), horizontalStrip)
+        cv2.imwrite(os.path.expanduser("~/imgcheck.png"), self.image)
+        #cv2.imwrite(os.path.expanduser("~/horicheck.png"), self.image[int(ry1):int(ry2),int(rx1):int(rx2),:])#self.image[0:1858,456:848,:])
+        plt.plot(smoothedHori)
+        plt.axhline(thresholdHori, color='cyan', linewidth=1)
+        plt.savefig(os.path.expanduser("~/horihist.png"))
+        plt.clf()
+        triggered = False
+        for x in range(int((x2-x1)//2),len(smoothedHori)):
+            if smoothedHori[x]<thresholdHori:
+                triggered = True
+            if smoothedHori[x]>thresholdHori and triggered:         
+                cX = x+x1             
+                return cX
+        return 0 
+
+    def locateSprocketHole(self):
+        calcAreaSize = (self.stdSprocketHeight*self.dy)*(self.sprocketWidth*self.dx)
+        area_size=0.8*calcAreaSize#60000
+        #rint(f"Calc area for {self.format} {(self.stdSprocketHeight*self.dy)*(self.sprocketWidth*self.dx):.02f}")
+        #self.imageSmall = cv2.resize(self.image, (640, 480))
+        # the image crop with the sprocket hole 
+        localImg = self.image.copy()
+        #cv2.imwrite(os.path.expanduser("~/contoursb4cut.png"),img)
+
+        x1 = int(self.findSprocketLeft() - (20*self.ScaleFactor))
+        x2 = int(x1 + (self.sprocketWidth*self.dx) + (40*self.ScaleFactor))
+        self.threshX1 = x1
+        self.threshX2 = x2
+        print(f"Thresh checking boundaries x1 {self.threshX1} x2 {self.threshX2} y1 {self.frame.holeCrop.y1} y2 {self.frame.holeCrop.y2}")
+        img = localImg[self.frame.holeCrop.y1:self.frame.holeCrop.y2, self.threshX1:self.threshX2]
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        #self.whiteTreshold = self.getWhiteThreshold()
+        #self.whiteThreshold = self.getWhiteThreshold(self.threshImg)
+        print(f"Checking white threshold before use {self.whiteThreshold}")
+        ret, self.imageHoleCrop = cv2.threshold(img, self.whiteThreshold, 255, 0) 
+        contours, hierarchy = cv2.findContours(self.imageHoleCrop, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        lenContours = len(contours)
+        locateHoleResult = 1 
+        oldcX = self.cX
+        oldcY = self.cY
+        oldrX = self.rX
+        self.area = area_size
+        minDist = self.dy
+        for l in range(lenContours):
+            cnt = contours[l]
+            area = cv2.contourArea(cnt)
+            if area > area_size:
+                x,y,w,h = cv2.boundingRect(cnt)
+                print(f"{l} {area} {cv2.boundingRect(cnt)} {y} {self.midy} {abs(self.midy-(y+0.5*h))}")
+                dist = abs(self.midy-(y+0.5*h))
+                if area > 3*area_size:
+                    locateHoleResult = 2 # very large contour found == no film
+                elif dist<minDist:
+                    print(f"found better at {dist}")
+                    locateHoleResult = 0 # hole found
+                    self.area = area
+                    bestCont = cnt
+                    minDist=dist
+        if locateHoleResult == 0:      
+            M = cv2.moments(bestCont)
+            # print(M)
+            try:
+                self.cX = int(M["m10"] / M["m00"])+self.threshX1
+                self.cY = int(M["m01"] / M["m00"])+self.frame.holeCrop.y1
+                x,y,w,h = cv2.boundingRect(bestCont)
+                self.rX = x+w+self.threshX1
+                #holeDist = 225
+                #if cY > holeDist : # distance between holes
+                #    print("cY=", cY)
+                #    locateHoleResult = 4 # 2. hole found
+                #    cY = cY - holeDist
+                resultImage = cv2.cvtColor(self.imageHoleCrop, cv2.COLOR_GRAY2BGR)
+                cv2.drawContours(resultImage, cnt, -1, (0,255,0), 3)
+                cv2.imwrite(os.path.expanduser("~/contours.png"),resultImage)
+                #break
+            except ZeroDivisionError:
+                print("no center")
+                locateHoleResult = 3 # no center
+                self.cX = oldcX
+                self.cY = oldcY # midy
+                self.rX = oldrX
+        else :
+            resultImage = cv2.cvtColor(self.imageHoleCrop, cv2.COLOR_GRAY2BGR)
+            cv2.drawContours(resultImage, contours, -1, (0,255,0), 3)
+            cv2.imwrite(os.path.expanduser("~/contours_fail.png"),resultImage)
+            self.cX = oldcX
+            self.cY = oldcY  
+                  
+        #print("cY=", self.cY, "oldcY=", oldcY, "locateHoleResult=", locateHoleResult)
+        print(f"result {locateHoleResult} cX {self.cX} cY {self.cY} rX {self.rX}")
+        p1 = (0, self.cY) 
+        p2 = (self.threshX2-self.threshX1, self.cY)
+        # print(p1, p2)
+        cv2.line(resultImage, p1, p2, (0, 0 ,255), 3)
+        #p1 = (int(self.cX-self.threshX1), 0) 
+        #p2 = (int(self.cX-self.threshX1), self.frame.holeCrop.y2-self.frame.holeCrop.y1) 
+        #print(p1, p2)
+        #cv2.line(resultImage, p1, p2, (0, 255, 0), 3)
+        p1 = (int(self.rX-self.threshX1), 0) 
+        p2 = (int(self.rX-self.threshX1), self.frame.holeCrop.y2-self.frame.holeCrop.y1) 
+        #print(p1, p2)
+        cv2.line(resultImage, p1, p2, (0, 0, 255), 3)
+        # show target midy
+        p1 = (0, self.midy) 
+        p2 = (self.threshX2-self.threshX1, self.midy)
+        cv2.line(resultImage, p1, p2, (0, 0, 0), 1)  # black line
+        p1 = (0, self.midy+1)
+        p2 = (self.threshX2-self.threshX1, self.midy+1)
+        cv2.line(resultImage, p1, p2, (255, 255, 255), 1) # white line
+        cv2.imwrite(os.path.expanduser("~/thresh_output.png"),resultImage)
+        cv2.imwrite(self.resultImagePath, resultImage)
+        
+        self.locateHoleResult = locateHoleResult
+        return locateHoleResult
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#==========================================================================
+
 class Film:
     format = "s8"
     resolution = "720x540"
