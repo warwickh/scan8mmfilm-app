@@ -37,7 +37,6 @@ delay = .005  # delay inbetween steps
 tolstep = 2 // 2  # defines how many steps are done for correction
 steps = 0
 
-
 step_minus = 0  # counter for stepper corrections
 step_plus = 0
 rewind = 0
@@ -45,7 +44,18 @@ rewind = 0
 spool_pwm = None
 led_pwm = None
 
-led_dc = 50
+led_dc = 100
+
+stepperSleepTimer = None
+
+def resetStepperTimer():
+    global stepperSleepTimer
+    GPIO.output(STEPON, GPIO.HIGH)
+    #stepperActiveTime = 30
+    #if stepperSleepTimer:
+    #    stepperSleepTimer.cancel()
+    #stepperSleepTimer = Timer(stepperActiveTime, stepStop)
+    #stepperSleepTimer.start()
     
 def initGpio() :
     global spool_pwm
@@ -135,22 +145,23 @@ def stepStop():
     print("Stepper off")
     GPIO.output(STEPON, GPIO.LOW)
 
-def stepHigh():
-    GPIO.output(STEP, GPIO.HIGH)
-    Timer(delay, stepLow).start()
+#def stepHigh():
+#    GPIO.output(STEP, GPIO.HIGH)
+#    Timer(delay, stepLow).start()
 
-def stepLow():
-    GPIO.output(STEP, GPIO.LOW)
+#def stepLow():
+#    GPIO.output(STEP, GPIO.LOW)
 
-def adjDn():
-    delay = 0.005
-    steps = 6
-    GPIO.output(DIR, CW)
-    for x in range(steps):
-        Timer(delay, stepHigh).start()
+#def adjDn():
+#    delay = 0.005
+#    steps = 6
+#    GPIO.output(DIR, CW)
+#    for x in range(steps):
+#        Timer(delay, stepHigh).start()
         
 def stepCw(steps):
     #delay = 0.005
+    resetStepperTimer()
     print(f"steps cw {steps} delay {delay}")
     GPIO.output(DIR, CW)
     for x in range(steps):
@@ -162,6 +173,7 @@ def stepCw(steps):
 
 def stepCcw(steps):
     #delay = 0.005
+    resetStepperTimer()
     print(f"steps ccw {steps} delay {delay}")
     GPIO.output(DIR, CCW)
     for x in range(steps):
@@ -177,6 +189,7 @@ def stopScanner():
     GPIO.output(STEPON, GPIO.LOW)
 
 def startScanner():
+    resetStepperTimer()
     GPIO.output((18, 15, 14), (1, 1, 0))
     #GPIO.output(ledon, GPIO.HIGH)  # turn on LED
     setLedDc(100)

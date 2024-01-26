@@ -201,14 +201,13 @@ class Frame:
     def __init__(self, imagePathName=None,*,image=None):
         self.imagePathName = imagePathName
         if image is None and imagePathName is not None :
-            self.imagePathName = imagePathName
             self.image = cv2.imread(imagePathName)
         elif image is not None :
             self.image = image
         self.thresh = None
         self.dy,self.dx,_ = self.image.shape
         self.ScaleFactor = self.dx/640.0
-        print(f"Scalefactor {Frame.ScaleFactor}")
+        print(f"Init Frame path {imagePathName} Scalefactor {Frame.ScaleFactor}")
         if Frame.format == "s8":
             self.stdSprocketHeight = Frame.s8_stdSprocketHeight
             self.holeCrop = Rect("hole_crop", int(Frame.s8_holeCrop.x1*self.ScaleFactor), 0, int(Frame.s8_holeCrop.x2*self.ScaleFactor), self.dy-1)
@@ -234,8 +233,7 @@ class Frame:
         self.locateHoleResult = 6
         #print(f"init complete {self.__dict__}")
         #self.whiteThreshold = 225 # always overwritten by call to getWhiteThreshold
-        self.sprocketHole = sprocketHole(self)
-        
+        self.sprocketHole = None
         
     def convert_cv_qt(self, cv_img, dest=None):
         """Convert from an opencv image to QPixmap"""
@@ -297,7 +295,9 @@ class Frame:
         self.imageCropped = self.image[self.p1[1]:self.p2[1], self.p1[0]:self.p2[0]]   
 
     def locateSprocketHole(self):
+        self.sprocketHole = sprocketHole(self)
         self.locateHoleResult, self.cY, self.cX = self.sprocketHole.process()#cX rX
+        self.sprocketHole = None
         return self.locateHoleResult
            
 class Film:
