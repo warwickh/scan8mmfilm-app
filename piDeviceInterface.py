@@ -48,15 +48,14 @@ led_dc = 100
 
 stepperSleepTimer = None
 
-    
 def resetStepperTimer():
     global stepperSleepTimer
     GPIO.output(STEPON, GPIO.HIGH)
-    stepperActiveTime = 30
-    if stepperSleepTimer:
-        stepperSleepTimer.cancel()
-    stepperSleepTimer = Timer(stepperActiveTime, stepStop)
-    stepperSleepTimer.start()
+    #stepperActiveTime = 30
+    #if stepperSleepTimer:
+    #    stepperSleepTimer.cancel()
+    #stepperSleepTimer = Timer(stepperActiveTime, stepStop)
+    #stepperSleepTimer.start()
     
 def initGpio() :
     global spool_pwm

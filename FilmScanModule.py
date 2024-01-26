@@ -233,8 +233,7 @@ class Frame:
         self.locateHoleResult = 6
         #print(f"init complete {self.__dict__}")
         #self.whiteThreshold = 225 # always overwritten by call to getWhiteThreshold
-        self.sprocketHole = sprocketHole(self)
-        
+        self.sprocketHole = None
         
     def convert_cv_qt(self, cv_img, dest=None):
         """Convert from an opencv image to QPixmap"""
@@ -296,7 +295,9 @@ class Frame:
         self.imageCropped = self.image[self.p1[1]:self.p2[1], self.p1[0]:self.p2[0]]   
 
     def locateSprocketHole(self):
+        self.sprocketHole = sprocketHole(self)
         self.locateHoleResult, self.cY, self.cX = self.sprocketHole.process()#cX rX
+        self.sprocketHole = None
         return self.locateHoleResult
            
 class Film:

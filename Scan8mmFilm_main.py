@@ -13,6 +13,10 @@ import string
 from Scan8mmFilm_ui import Ui_MainWindow
 import os
 
+import gc
+import tracemalloc
+import profiler
+
 try:
     from picamera2 import Picamera2
     from picamera2.previews.qt import QGlPicamera2
@@ -213,7 +217,7 @@ class Window(QMainWindow, Ui_MainWindow):
         if self.rbtnScan.isChecked():
             if picamera2_present: 
                 self.enableButtons(busy=True)  
-                #self.motorStart()
+                self.scannerStart()
                 pidevi.spoolFwd(0.02)
                 pidevi.stepCw(self.film.stepsPrFrame)
                 #pidevi.spoolStart()
@@ -227,7 +231,7 @@ class Window(QMainWindow, Ui_MainWindow):
         if self.rbtnScan.isChecked():
             if picamera2_present: 
                 self.enableButtons(busy=True)  
-                #self.motorStart()
+                self.scannerStart()
                 pidevi.spoolBack(0.02)
                 pidevi.stepCcw(self.film.stepsPrFrame)
                 #pidevi.spoolStart()
@@ -263,7 +267,7 @@ class Window(QMainWindow, Ui_MainWindow):
         if self.rbtnScan.isChecked():
             if picamera2_present:
                 self.enableButtons(busy=True)  
-                #self.motorStart()
+                self.scannerStart()
                 pidevi.spoolBack(0.05)
                 pidevi.stepCcw(4)
                 #pidevi.spoolStart()
@@ -280,7 +284,7 @@ class Window(QMainWindow, Ui_MainWindow):
         if self.rbtnScan.isChecked():
             if picamera2_present:
                 self.enableButtons(busy=True)  
-                #self.motorStart()
+                self.scannerStart()
                 pidevi.spoolFwd(0.05)
                 pidevi.stepCw(4)  
                 #pidevi.spoolStart()
@@ -739,6 +743,9 @@ class QThreadScan(QtCore.QThread):
         release = True
         pidevi.spool()
         while self.cmd == 1 :
+            gc.collect()
+            profiler.snapshot()
+            print(tracemalloc.get_traced_memory())
             try:
                 #pidevi.spoolStart()
                 print(f"Setting capture config RGB888 size: {Camera.ViewWidth}, {Camera.ViewHeight}")
@@ -804,7 +811,7 @@ class QThreadScan(QtCore.QThread):
                     stuckCount = 0
 
                 sleep(0.1)  
-                  
+                self.frame = None
             except Exception as err:
                 print("QThreadScan", err)
                 self.sigStateChange.emit("Exception:" + str(err), -1)
@@ -824,6 +831,10 @@ class QThreadScan(QtCore.QThread):
 # =============================================================================
 
 if __name__ == "__main__":
+    profiler.reset()
+    tracemalloc.start(10)
+    gc.collect()
+    profiler.snapshot()
     safe = True#False
     if safe:
         try:
@@ -844,4 +855,7 @@ if __name__ == "__main__":
         if  picamera2_present:
                 pidevi.cleanup()
     Ini.saveConfig()
+    profiler.display_stats()
+    profiler.compare()
+    #profiler.print_trace()
     sys.exit(0)

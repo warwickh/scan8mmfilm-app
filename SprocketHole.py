@@ -74,14 +74,15 @@ class sprocketHole:
                 #Same as mask but add canny edge detection
             end_time = time.time()
             self.locateHoleResult = result
+            self.image = None
             elapsed_time = end_time - start_time
-            self.results[method]={}
-            self.results[method]['result'] = result
-            self.results[method]['time'] = elapsed_time
+            #self.results[method]={}
+            #self.results[method]['result'] = result
+            #self.results[method]['time'] = elapsed_time
             if result==0:
-                self.results[method]['cY'] = self.cY
+            #    self.results[method]['cY'] = self.cY
                 #results[method]['cX'] = self.cX
-                self.results[method]['rX'] = self.rX
+            #    self.results[method]['rX'] = self.rX
                 return result, self.cY, self.rX
             print(f"{method} took {elapsed_time:.04f} with result {self.locateHoleResult}")
             #if self.locateHoleResult==0:
@@ -89,8 +90,8 @@ class sprocketHole:
                 #break
         #self.results = {self.imagePathName:results}
         #print(self.results)
-        with open( os.path.expanduser("~/frames.json"), "a") as outfile:
-            outfile.write(json.dumps(self.results, indent=4))
+        #with open( os.path.expanduser("~/frames.json"), "a") as outfile:
+        #    outfile.write(json.dumps(self.results, indent=4))
 
     def getWhiteThreshold(self, threshFilename):
         #threshFilename = os.path.expanduser("~/thresh_test.png")
@@ -158,14 +159,16 @@ class sprocketHole:
             area = cv2.contourArea(cnt)
             if area > area_size:
                 x,y,w,h = cv2.boundingRect(cnt)
-                print(f"{l} {area} {cv2.boundingRect(cnt)} {y} {self.midy} {abs(self.midy-y)}")
-                dist = abs(self.midy-y)
+                print(f"{l} {area} {cv2.boundingRect(cnt)} {y} {self.midy} {abs(self.midy-(y+0.5*h))}")
+                dist = abs(self.midy-(y+0.5*h))
                 if area > 3*area_size:
                     locateHoleResult = 2 # very large contour found == no film
                 elif dist<minDist:
+                    print(f"found better at {dist}")
                     locateHoleResult = 0 # hole found
                     self.area = area
                     bestCont = cnt
+                    minDist=dist
         if locateHoleResult == 0:      
             M = cv2.moments(bestCont)
             # print(M)
@@ -232,7 +235,7 @@ class sprocketHole:
         ratioThresh = 0.1 #may need to adjust with film format
         #searchStart = int(self.holeCrop.x1-searchRange)
         searchStart = int(0.1*self.dx)#int(0.05*self.dx) #to the right of left edge of films
-        searchStart =400
+        searchStart =450
         searchEnd = int(searchStart+searchRange)
         step = int(10*self.ScaleFactor)
         countSteps = 0 #check that we're not taking too long
@@ -246,6 +249,7 @@ class sprocketHole:
         upper = np.array([hMax, sMax, vMax])
         hsv = cv2.cvtColor(self.image, cv2.COLOR_BGR2HSV)
         self.thresh = cv2.inRange(hsv, lower, upper)
+        hsv = None
         for x1 in range(searchStart,searchEnd,step):
             strip = self.thresh[:,int(x1):int(x1+step),]
             ratio = float(np.sum(strip == 255)/(self.dx*step))
