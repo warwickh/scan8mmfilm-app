@@ -707,7 +707,7 @@ class QThreadScan(QtCore.QThread):
         self.cmd = 1 # run 
         self.midy = None#self.frame.midy #TODO switch to per frame setting
         self.tolerance = 6
-        self.pixelsPerStep = 2
+        self.pixelsPerStep = 3
         self.parent = parent
         self.frameNo = Film.getFileCount(Film.scanFolder)
         
@@ -764,6 +764,7 @@ class QThreadScan(QtCore.QThread):
                 currentcY = self.frame.cY#//self.frame.ScaleFactor
                 tolerance = self.tolerance*self.frame.ScaleFactor
                 tolstep = int(abs(currentcY-self.frame.midy)//self.frame.ScaleFactor//self.pixelsPerStep)
+                tolstep = min(tolstep, 20)
                 #tolstep = 4
                 print(f"{currentcY}-----------------------------------------------")
                 if currentcY > self.midy + tolerance:

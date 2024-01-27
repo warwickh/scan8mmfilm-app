@@ -174,12 +174,18 @@ class Frame:
     format = "s8"
     s8_frameCrop = Rect("s8_frame_crop", 2, -107, 2+1453, 1040-107)
     s8_holeCrop = Rect("s8_hole_crop", 75, 0, 110, 2463) 
+    s8_stdSprocketHeight = 0.1
+    s8_sprocketWidth = 0.055
+    
     s8_minSprocketSize = 40
     s8_maxSprocketSize = 65
     s8_midx = 64
     s8_midy = 240
     r8_frameCrop = Rect("r8_frame_crop", 146, 28, 146+814, 28+565)
     r8_holeCrop = Rect("r8_hole_crop", 75, 0, 240, 276)
+    r8_stdSprocketHeight = 0.1
+    r8_sprocketWidth = 0.13
+    
     r8_minSprocketSize = 40
     r8_maxSprocketSize = 58
     r8_midx = 64
@@ -216,6 +222,9 @@ class Frame:
         if Frame.format == "s8":
             self.minSprocketSize = Frame.s8_minSprocketSize*self.ScaleFactor
             self.maxSprocketSize = Frame.s8_maxSprocketSize*self.ScaleFactor
+            self.stdSprocketHeight = Frame.s8_stdSprocketHeight
+            self.sprocketWidth = Frame.s8_sprocketWidth
+            
             self.holeCrop = Rect("hole_crop", Frame.s8_holeCrop.x1*self.ScaleFactor, 0, Frame.s8_holeCrop.x2*self.ScaleFactor, self.dy-1)
             self.frameCrop = Frame.s8_frameCrop
             self.ratio = Frame.s8_ratio
@@ -223,6 +232,9 @@ class Frame:
         else:
             self.minSprocketSize = Frame.r8_minSprocketSize*self.ScaleFactor
             self.maxSprocketSize = Frame.r8_maxSprocketSize*self.ScaleFactor
+            self.stdSprocketHeight = Frame.r8_stdSprocketHeight
+            self.sprocketWidth = Frame.r8_sprocketWidth
+            
             self.holeCrop = Rect("hole_crop", Frame.r8_holeCrop.x1*self.ScaleFactor, 0, Frame.r8_holeCrop.x2*self.ScaleFactor, self.dy-1)
             self.frameCrop = Frame.r8_frameCrop
             self.ratio = Frame.r8_ratio
@@ -231,6 +243,7 @@ class Frame:
         #self.midy = self.dy//2#240*self.ScaleFactor 
         self.cX = self.midx 
         self.cY = self.midy
+        self.rX = self.cX + self.sprocketWidth
         self.sprocketSize = 0    
         self.histogram = None
         #self.histogram = cv2.imread(os.path.expanduser("~/my_cv2hist_lim.png"))
@@ -257,7 +270,9 @@ class Frame:
         return self.convert_cv_qt(self.imageCropped, dest)
         
     def getHoleCrop(self) :
-        cv2.imwrite(os.path.expanduser("~/getHoleCrop.png"), self.imageHoleCrop)
+        #cv2.imwrite(os.path.expanduser("~/getHoleCrop.png"), self.imageHoleCrop)
+        #self.imageHoleCrop = cv2.resize(cv2.imread(self.resultImagePath), (0,0), fx=1/self.ScaleFactor, fy=1/self.ScaleFactor)
+        self.imageHoleCrop = cv2.resize(self.imageHoleCrop, (0,0), fx=1/self.ScaleFactor, fy=1/self.ScaleFactor)
         return self.convert_cv_qt(self.imageHoleCrop)
 
     def getHistogram(self):
@@ -539,7 +554,7 @@ class Frame:
         ratioThresh = 0.1 #may need to adjust with film format
         #searchStart = int(self.holeCrop.x1-searchRange)
         searchStart = int(0.1*self.dx)#int(0.05*self.dx) #to the right of left edge of films
-        searchStart =450 #TODO
+        searchStart =300 #TODO
         searchEnd = int(searchStart+searchRange)
         step = int(10*self.ScaleFactor)
         countSteps = 0 #check that we're not taking too long
@@ -584,7 +599,7 @@ class Frame:
         histoHori       = np.mean(horizontalEdges,axis=(0,2))
         smoothedHori    = cv2.GaussianBlur(histoHori,(1,5),0)
         maxPeakValueH   = smoothedHori.max()
-        thresholdHori   = self.frame.innerThresh*maxPeakValueH
+        thresholdHori   = self.innerThresh*maxPeakValueH
         cv2.imwrite(os.path.expanduser("~/hori.png"), horizontalStrip)
         cv2.imwrite(os.path.expanduser("~/imgcheck.png"), self.image)
         #cv2.imwrite(os.path.expanduser("~/horicheck.png"), self.image[int(ry1):int(ry2),int(rx1):int(rx2),:])#self.image[0:1858,456:848,:])
@@ -610,12 +625,12 @@ class Frame:
         localImg = self.image.copy()
         #cv2.imwrite(os.path.expanduser("~/contoursb4cut.png"),img)
 
-        x1 = int(self.findSprocketLeft() - (20*self.ScaleFactor))
-        x2 = int(x1 + (self.sprocketWidth*self.dx) + (40*self.ScaleFactor))
+        x1 = int(self.findSprocketLeft() - (15*self.ScaleFactor))
+        x2 = int(x1 + (self.sprocketWidth*self.dx) + (42*self.ScaleFactor))
         self.threshX1 = x1
         self.threshX2 = x2
-        print(f"Thresh checking boundaries x1 {self.threshX1} x2 {self.threshX2} y1 {self.frame.holeCrop.y1} y2 {self.frame.holeCrop.y2}")
-        img = localImg[self.frame.holeCrop.y1:self.frame.holeCrop.y2, self.threshX1:self.threshX2]
+        print(f"Thresh checking boundaries x1 {self.threshX1} x2 {self.threshX2} y1 {self.holeCrop.y1} y2 {self.holeCrop.y2}")
+        img = localImg[self.holeCrop.y1:self.holeCrop.y2, self.threshX1:self.threshX2]
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         #self.whiteTreshold = self.getWhiteThreshold()
         #self.whiteThreshold = self.getWhiteThreshold(self.threshImg)
@@ -634,10 +649,12 @@ class Frame:
             area = cv2.contourArea(cnt)
             if area > area_size:
                 x,y,w,h = cv2.boundingRect(cnt)
-                print(f"{l} {area} {cv2.boundingRect(cnt)} {y} {self.midy} {abs(self.midy-(y+0.5*h))}")
+                print(f"y {x} y {y} w {w} h {h}")
+                print(f"{l} {area} {cv2.boundingRect(cnt)} {self.midy} - {y+0.5*h} = {abs(self.midy-(y+0.5*h))}")
                 dist = abs(self.midy-(y+0.5*h))
-                if area > 3*area_size:
+                if area > 7*area_size:#TODO too high - should return code and jump to another method
                     locateHoleResult = 2 # very large contour found == no film
+                    raise Exception(f"very large contour found == no film {area} > 3*{area_size}")
                 elif dist<minDist:
                     print(f"found better at {dist}")
                     locateHoleResult = 0 # hole found
@@ -649,7 +666,7 @@ class Frame:
             # print(M)
             try:
                 self.cX = int(M["m10"] / M["m00"])+self.threshX1
-                self.cY = int(M["m01"] / M["m00"])+self.frame.holeCrop.y1
+                self.cY = int(M["m01"] / M["m00"])+self.holeCrop.y1
                 x,y,w,h = cv2.boundingRect(bestCont)
                 self.rX = x+w+self.threshX1
                 #holeDist = 225
@@ -685,19 +702,19 @@ class Frame:
         #print(p1, p2)
         #cv2.line(resultImage, p1, p2, (0, 255, 0), 3)
         p1 = (int(self.rX-self.threshX1), 0) 
-        p2 = (int(self.rX-self.threshX1), self.frame.holeCrop.y2-self.frame.holeCrop.y1) 
+        p2 = (int(self.rX-self.threshX1), self.holeCrop.y2-self.holeCrop.y1) 
         #print(p1, p2)
         cv2.line(resultImage, p1, p2, (0, 0, 255), 3)
         # show target midy
-        p1 = (0, self.midy) 
-        p2 = (self.threshX2-self.threshX1, self.midy)
-        cv2.line(resultImage, p1, p2, (0, 0, 0), 1)  # black line
-        p1 = (0, self.midy+1)
-        p2 = (self.threshX2-self.threshX1, self.midy+1)
-        cv2.line(resultImage, p1, p2, (255, 255, 255), 1) # white line
+        p1 = (0, int(self.midy)) 
+        p2 = (int(self.threshX2-self.threshX1), int(self.midy))
+        cv2.line(resultImage, p1, p2, (0, 0, 0), 3)  # black line
+        p1 = (0, int(self.midy+3))
+        p2 = (int(self.threshX2-self.threshX1), int(self.midy+3))
+        cv2.line(resultImage, p1, p2, (255, 255, 255), 3) # white line
         cv2.imwrite(os.path.expanduser("~/thresh_output.png"),resultImage)
-        cv2.imwrite(self.resultImagePath, resultImage)
-        
+        #cv2.imwrite(self.resultImagePath, resultImage)
+        self.imageHoleCrop = resultImage
         self.locateHoleResult = locateHoleResult
         return locateHoleResult
     
