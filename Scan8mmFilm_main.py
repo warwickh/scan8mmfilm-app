@@ -707,7 +707,7 @@ class QThreadScan(QtCore.QThread):
         self.cmd = 1 # run 
         self.midy = None#self.frame.midy #TODO switch to per frame setting
         self.tolerance = 6
-        self.pixelsPerStep = 3
+        self.pixelsPerStep = 2.5
         self.parent = parent
         self.frameNo = Film.getFileCount(Film.scanFolder)
         
@@ -741,17 +741,20 @@ class QThreadScan(QtCore.QThread):
                 capture_config = picam2.create_still_configuration(main={"format": "RGB888","size": (Camera.ViewWidth, Camera.ViewHeight)},transform=Transform(vflip=True,hflip=True))
                 image = picam2.switch_mode_and_capture_array(capture_config, "main") #, signal_function=self.qpicamera2.signal_done)
                 self.frame = Frame(image=image)
+                
+                
                 locateHoleResult = self.frame.locateSprocketHole()#Frame.holeMinArea)
                 print("cY",self.frame.cY ,"oldY", oldY, "locateHoleResult", locateHoleResult,"cmd",self.cmd,"sprocketsize",self.frame.sprocketSize)
                 
                 if locateHoleResult != 0 :
-                    if locateHoleResult==2:
-                        #pidevi.stepCw(6)
-                        pass
-                    else:
-                        self.cmd = 2
-                        self.locateHoleResult = locateHoleResult
-                        break
+                    print(f"Thresh failed trying ratio")
+                    locateHoleResult = self.frame.locateSprocketHoleOld()#Frame.holeMinArea)
+                    print("Alt cY",self.frame.cY ,"oldY", oldY, "locateHoleResult", locateHoleResult,"cmd",self.cmd,"sprocketsize",self.frame.sprocketSize)
+                
+                if locateHoleResult != 0 :
+                    self.cmd = 2
+                    self.locateHoleResult = locateHoleResult
+                    break
                     
                 if oldY != 0 and oldY == self.frame.cY :
                     # adjustment failed - film stuck
