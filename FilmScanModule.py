@@ -634,7 +634,9 @@ class Frame:
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         #self.whiteTreshold = self.getWhiteThreshold()
         #self.whiteThreshold = self.getWhiteThreshold(self.threshImg)
+        #self.whiteThreshold=220
         print(f"Checking white threshold before use {self.whiteThreshold}")
+        print(f"area size {area_size}")
         ret, self.imageHoleCrop = cv2.threshold(img, self.whiteThreshold, 255, 0) 
         contours, hierarchy = cv2.findContours(self.imageHoleCrop, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         lenContours = len(contours)
@@ -647,14 +649,15 @@ class Frame:
         for l in range(lenContours):
             cnt = contours[l]
             area = cv2.contourArea(cnt)
+            print(f"{l} {area}")
             if area > area_size:
                 x,y,w,h = cv2.boundingRect(cnt)
                 print(f"y {x} y {y} w {w} h {h}")
                 print(f"{l} {area} {cv2.boundingRect(cnt)} {self.midy} - {y+0.5*h} = {abs(self.midy-(y+0.5*h))}")
                 dist = abs(self.midy-(y+0.5*h))
-                if area > 7*area_size:#TODO too high - should return code and jump to another method
+                if area > 3*area_size:#TODO too high - should return code and jump to another method
                     locateHoleResult = 2 # very large contour found == no film
-                    raise Exception(f"very large contour found == no film {area} > 3*{area_size}")
+                    #raise Exception(f"very large contour found == no film {area} > 3*{area_size}")
                 elif dist<minDist:
                     print(f"found better at {dist}")
                     locateHoleResult = 0 # hole found
@@ -693,8 +696,8 @@ class Frame:
                   
         #print("cY=", self.cY, "oldcY=", oldcY, "locateHoleResult=", locateHoleResult)
         print(f"result {locateHoleResult} cX {self.cX} cY {self.cY} rX {self.rX}")
-        p1 = (0, self.cY) 
-        p2 = (self.threshX2-self.threshX1, self.cY)
+        p1 = (0, int(self.cY)) 
+        p2 = (int(self.threshX2-self.threshX1), int(self.cY))
         # print(p1, p2)
         cv2.line(resultImage, p1, p2, (0, 0 ,255), 3)
         #p1 = (int(self.cX-self.threshX1), 0) 
