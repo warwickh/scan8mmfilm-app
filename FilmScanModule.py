@@ -174,7 +174,7 @@ class Frame:
     format = "s8"
     s8_frameCrop = Rect("s8_frame_crop", 2, -107, 2+1453, 1040-107)
     s8_holeCrop = Rect("s8_hole_crop", 75, 0, 110, 2463) 
-    s8_stdSprocketHeight = 0.1
+    s8_stdSprocketHeight = 0.13
     s8_sprocketWidth = 0.055
     
     s8_minSprocketSize = 40
@@ -554,9 +554,8 @@ class Frame:
         ratioThresh = 0.1 #may need to adjust with film format
         #searchStart = int(self.holeCrop.x1-searchRange)
         searchStart = int(0.1*self.dx)#int(0.05*self.dx) #to the right of left edge of films
-        searchStart =300 #TODO
+        searchStart =250 #TODO set frame edge should only be full black on film edge
         searchEnd = int(searchStart+searchRange)
-        step = int(10*self.ScaleFactor)
         countSteps = 0 #check that we're not taking too long
         hMin = 0
         sMin = 0
@@ -569,6 +568,21 @@ class Frame:
         hsv = cv2.cvtColor(self.image, cv2.COLOR_BGR2HSV)
         self.thresh = cv2.inRange(hsv, lower, upper)
         hsv = None
+        #step = 5
+        filmEdgeTrigger = 0.017
+        #for x1 in range(searchStart,searchEnd,1):
+        #    strip = self.thresh[:,int(x1):int(x1+step),]
+        #    ratio = float(np.sum(strip == 255)/(self.dx*step))
+        #    print(f"x {x1} ratio {ratio} {np.sum(strip == 255)} dx {self.dx*step}")
+        #    p1 = (int(x1), int(0)) 
+        #    p2 = (int(x1), int(self.dy)) 
+        #    cv2.line(self.image, p1, p2, (255, 0, 0), 1) #Vert
+        #    if ratio<filmEdgeTrigger:
+        #        print(f"Found edge at {x1} with ratio {ratio}")
+        #        searchStart=x1
+        #        break
+        step = int(2*self.ScaleFactor)
+        triggered = False
         for x1 in range(searchStart,searchEnd,step):
             strip = self.thresh[:,int(x1):int(x1+step),]
             ratio = float(np.sum(strip == 255)/(self.dx*step))
@@ -577,11 +591,19 @@ class Frame:
             p2 = (int(x1), int(self.dy)) 
             cv2.line(self.image, p1, p2, (255, 255, 255), 3) #Vert
             countSteps+=1
-            if ratio>ratioThresh:
+            if ratio<filmEdgeTrigger and not triggered:
+                print(f"Found edge at {x1} with ratio {ratio}")
+                triggered = True
+                p1 = (int(x1), int(0)) 
+                p2 = (int(x1), int(self.dy)) 
+                cv2.line(self.image, p1, p2, (255, 0, 0), 1) #Vert
+            elif ratio>ratioThresh and triggered:
                 cv2.imwrite(os.path.expanduser("~/testx.png"), self.image)
                 print(f"Final x {x1} ratio {ratio} steps {countSteps}")
                 returnX1 = x1+(step/2)
                 break
+        if not triggered:
+            cv2.imwrite(os.path.expanduser("~/leftedgefail.png"), self.image)
         return returnX1
 
     def findSprocketRight(self, x1, x2, sprocketHeight, cY):
@@ -617,6 +639,7 @@ class Frame:
         return 0 
 
     def locateSprocketHole(self):
+        print(f"{self.imagePathName}")
         calcAreaSize = (self.stdSprocketHeight*self.dy)*(self.sprocketWidth*self.dx)
         area_size=0.8*calcAreaSize#60000
         #rint(f"Calc area for {self.format} {(self.stdSprocketHeight*self.dy)*(self.sprocketWidth*self.dx):.02f}")
@@ -645,11 +668,14 @@ class Frame:
         oldcY = self.cY
         oldrX = self.rX
         self.area = area_size
-        minDist = self.dy
+        #minDist = self.dy
+        #print(f"Calc interhole dist dy {self.dy} {self.stdSprocketHeight} {self.ratio}")
+        #print(f"intehole dist = {self.dy*self.s8_stdSprocketHeight*self.ratio}")
+        minDist = self.dy*self.s8_stdSprocketHeight*self.ratio #estimate interhold dist
         for l in range(lenContours):
             cnt = contours[l]
             area = cv2.contourArea(cnt)
-            print(f"{l} {area}")
+            #print(f"{l} {area}")
             if area > area_size:
                 x,y,w,h = cv2.boundingRect(cnt)
                 print(f"y {x} y {y} w {w} h {h}")
