@@ -52,9 +52,10 @@ if __name__ == "__main__":
     #fileList = sorted(glob.glob('*.jpg'))
     #run_stab(fileList)
     #fileName = os.path.expanduser("~/scanframes/crop/bike/frame%06d.jpg")
-    fileName = os.path.expanduser("~/scanframes/crop/roll6/frame%06d.jpg")
+    roll = "roll6"
+    fileName = os.path.expanduser(f"~/scanframes/crop/{roll}/frame%06d.jpg")
     print(type(fileName))
     print(os.path.exists(fileName))
     #run_graph(fileName)
-    TRANSFORMATIONS_PATH = os.path.expanduser("~/transforms.csv")
+    TRANSFORMATIONS_PATH = os.path.expanduser(f"~/{roll}_transforms.csv")
     save_transforms(fileName, TRANSFORMATIONS_PATH)
