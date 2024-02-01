@@ -1,7 +1,7 @@
 [paths]
 film_folder = /home/pi/film8/film
 scan_folder = /home/warwickh/scanframes/roll3redo
-crop_folder = /home/warwickh/scanframes/crop/roll3test
+crop_folder = /home/warwickh/scanframes/crop/roll3
 
 [camera]
 view_width = 3280
@@ -18,37 +18,48 @@ r8_steps_pr_frame = 80
 
 [frame]
 format = s8
-outerthresh = 0.8003226164480267
-innerthresh = 0.3
-s8_stdsprocketheight = 0.13
-s8_stdsprocketwidth = 0.055
+outerthresh = 0.6100000000000002
+innerthresh = 0.25999999999999995
+s8_minsprocketsize = 40
+s8_maxsprocketsize = 65
 s8_ratio = 2.7007874015748037
 s8_midx = 64
 s8_midy = 240
-r8_stdsprocketheight = 0.1
-r8_stdsprockewidth = None
+r8_minsprocketsize = 40
+r8_maxsprocketsize = 58
 r8_ratio = 2.5896762904636925
 r8_midx = 64
 r8_midy = 120
-analysistype = ratio
 
 [s8_frame_crop]
-x1 = 2
-x2 = 1455
-y1 = -107
-y2 = 933
+x1 = 26
+x2 = 1612
+y1 = -115
+y2 = 1012
 
-[s8_white_crop]
-x1 = -185
-x2 = -27
-y1 = -109
-y2 = 122
+[s8_hole_crop]
+x1 = 385
+x2 = 564
+y1 = 0
+y2 = 2463
 
 [r8_frame_crop]
 x1 = 146
 x2 = 960
 y1 = 28
 y2 = 593
+
+[r8_hole_crop]
+x1 = 385
+x2 = 1230
+y1 = 0
+y2 = 1415
+
+[s8_white_crop]
+x1 = -50
+x2 = 50
+y1 = -800
+y2 = 100
 
 [r8_white_crop]
 x1 = 436

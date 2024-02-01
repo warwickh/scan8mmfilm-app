@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import pyqtSignal, QTimer
 from PyQt5 import QtCore, QtWidgets
-from FilmScanModule import Ini, Camera, Frame, Film, getAdjustableRects
+from FilmScanModule import Ini, Camera, Frame, Film, getAdjustableRects, getAnalysisTypes
 import sys
 from time import sleep
 import cv2
@@ -52,15 +52,24 @@ class Window(QMainWindow, Ui_MainWindow):
             self.horizontalLayout_4.addWidget(self.qpicamera2)
         self.dsbInner.setValue(float(Frame.innerThresh))
         self.dsbOuter.setValue(float(Frame.outerThresh))
+        self.sbWT.setValue(int(Frame.whiteThreshold))
+        #print(f"Init str(Frame.analysisType) {str(Frame.analysisType)}")
         self.connectSignalsSlots()
         self.lblHoleCrop.setMinimumWidth(Frame.getHoleCropWidth())
         self.adjustableRects = getAdjustableRects()
         for r in self.adjustableRects:
             self.comboBox.addItem(r.name)
+        self.analysisTypes = getAnalysisTypes()
+        for r in self.analysisTypes:
+            self.cbAnalysisType.addItem(r)
         self.adjRectIx = 0
         self.comboBox.currentIndexChanged.connect(self.adjustableRectChanged)
-        self.dsbInner.setValue(float(Frame.innerThresh))
-        self.dsbOuter.setValue(float(Frame.outerThresh))
+        self.cbAnalysisType.setCurrentText(str(Frame.analysisType))
+        self.cbAnalysisType.currentTextChanged.connect(self.analysisTypeChanged)
+
+        
+        #self.dsbInner.setValue(float(Frame.innerThresh))
+        #self.dsbOuter.setValue(float(Frame.outerThresh))
         self.doLblImagePrep = False
 
         QTimer.singleShot(100, self.initScanner)
@@ -77,11 +86,13 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnPrevious.clicked.connect(self.previous)
         self.pbtnRandom.clicked.connect(self.random)
         self.pbtnMakeFilm.clicked.connect(self.makeFilm)
-        self.pbtnLedPlus.clicked.connect(self.ledPlus)
-        self.pbtnLedMinus.clicked.connect(self.ledMinus)
+        #self.pbtnLedPlus.clicked.connect(self.ledPlus)
+        #self.pbtnLedMinus.clicked.connect(self.ledMinus)
+        self.pbtnSetWT.clicked.connect(self.setWT)
         self.pbtnSpool.clicked.connect(self.spool)
         self.dsbOuter.valueChanged.connect(self.outerThreshChanged)
         self.dsbInner.valueChanged.connect(self.innerThreshChanged)
+        self.sbWT.valueChanged.connect(self.whiteThresholdChanged)
         self.pbtnX1Minus.clicked.connect(self.x1Minus)
         self.pbtnX1Plus.clicked.connect(self.x1Plus)
         self.pbtnX2Minus.clicked.connect(self.x2Minus)
@@ -315,6 +326,17 @@ class Window(QMainWindow, Ui_MainWindow):
         self.adjRectIx = i
         self.showAdjustValues()
 
+    def analysisTypeChanged(self, i):
+        self.analysisType = i
+        Frame.analysisType = i
+        print(f"Setting analysis type to {Frame.analysisType}")
+        self.refreshFrame()
+        self.showAdjustValues()
+
+    def whiteThresholdChanged(self):
+        Frame.whiteThreshold = self.sbWT.value()
+        self.refreshFrame()
+        self.showAdjustValues()
 
     def outerThreshChanged(self):
         Frame.outerThresh = self.dsbOuter.value()
@@ -326,55 +348,44 @@ class Window(QMainWindow, Ui_MainWindow):
         self.refreshFrame()
         self.showAdjustValues()
         
-    def ledPlus(self):
-        if self.rbtnScan.isChecked():
-            if picamera2_present:
-                Film.led_dc = pidevi.ledPlus()
-                print(f"LED DC now {Film.led_dc}")
+    #def ledPlus(self):
+    #    if self.rbtnScan.isChecked():
+    #        if picamera2_present:
+    #            Film.led_dc = pidevi.ledPlus()
+    #            print(f"LED DC now {Film.led_dc}")
 
-    def ledMinus(self):
-        if self.rbtnScan.isChecked():
-            if picamera2_present:
-                Film.led_dc = pidevi.ledMinus()
-                print(f"LED DC now {Film.led_dc}")
+    #def ledMinus(self):
+    #    if self.rbtnScan.isChecked():
+    #        if picamera2_present:
+    #            Film.led_dc = pidevi.ledMinus()
+    #            print(f"LED DC now {Film.led_dc}")
+
+    def setWT(self):
+        Frame.whiteThreshold = self.frame.getWhiteThreshold()
+        self.sbWT.setValue(int(Frame.whiteThreshold))
+        print(f"Setting white threshold to {Frame.whiteThreshold} from image")
 
     def x1Plus(self):
-        if self.film.format=="s8":
-            Frame.s8_holeCrop.x1+=1
-            self.lblX1.setText(str(Frame.s8_holeCrop.x1))
-        else:
-            Frame.r8_holeCrop.x1+=1
-            self.lblX2.setText(str(Frame.r8_holeCrop.x1))
+        Frame.ratioX1+=1
+        self.lblX1.setText(str(Frame.ratioX1))
         self.refreshFrame()
         self.showAdjustValues()
 
     def x1Minus(self):
-        if self.film.format=="s8":
-            Frame.s8_holeCrop.x1-=1
-            self.lblX1.setText(str(Frame.s8_holeCrop.x1))
-        else:
-            Frame.r8_holeCrop.x1-=1
-            self.lblX1.setText(str(Frame.r8_holeCrop.x1))
+        Frame.ratioX1-=1
+        self.lblX1.setText(str(Frame.ratioX1))
         self.refreshFrame()
         self.showAdjustValues()
                 
     def x2Plus(self):
-        if self.film.format=="s8":
-            Frame.s8_holeCrop.x2+=1
-            self.lblX2.setText(str(Frame.s8_holeCrop.x2))
-        else:
-            Frame.r8_holeCrop.x2+=1
-            self.lblX2.setText(str(Frame.r8_holeCrop.x2))
+        Frame.ratioX2+=1
+        self.lblX1.setText(str(Frame.ratioX2))
         self.refreshFrame()
         self.showAdjustValues()
                 
     def x2Minus(self):
-        if self.film.format=="s8":
-            Frame.s8_holeCrop.x2-=1
-            self.lblX2.setText(str(Frame.s8_holeCrop.x2))
-        else:
-            Frame.r8_holeCrop.x2-=1
-            self.lblX2.setText(str(Frame.r8_holeCrop.x2))
+        Frame.ratioX2-=1
+        self.lblX2.setText(str(Frame.ratioX1))
         self.refreshFrame()
         self.showAdjustValues()
     
@@ -497,8 +508,10 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnX2Plus.setEnabled(frame)
         self.dsbOuter.setEnabled(frame)
         self.dsbInner.setEnabled(frame)
-        self.pbtnLedPlus.setEnabled(scan)
-        self.pbtnLedMinus.setEnabled(scan)
+        self.sbWT.setEnabled(idle and crop and frame)
+        #self.pbtnLedPlus.setEnabled(scan)
+        #self.pbtnLedMinus.setEnabled(scan)
+        self.pbtnSetWT.setEnabled(idle and crop and frame)
         self.pbtnSpool.setEnabled(pi and (crop or scan))
 
     # Shared GUI update methods ---------------------------------------------------------------------------------------------------------------------------     
@@ -534,12 +547,8 @@ class Window(QMainWindow, Ui_MainWindow):
             else:
                 self.rbtnCrop.setChecked(True) 
         self.enableButtons(busy=False)
-        if self.film.format=="s8":
-            self.lblX1.setText(str(Frame.s8_holeCrop.x1))
-            self.lblX2.setText(str(Frame.s8_holeCrop.x2))
-        else:
-            self.lblX1.setText(str(Frame.r8_holeCrop.x1))
-            self.lblX2.setText(str(Frame.r8_holeCrop.x2))
+        self.lblX1.setText(str(Frame.ratioX1))
+        self.lblX2.setText(str(Frame.ratioX2))
 
     def updateInfoPanel(self):
         self.lblCropInfo.setText(f"Cropped frame count {Film.getCropCount()}")
@@ -551,7 +560,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.lblScanFrame.setText(Film.scanFolder)
             else:
                 self.lblScanFrame.setText(self.frame.imagePathName)       
-            self.lblInfo1.setText(f"cX={frame.cX} cY={frame.cY} midy={frame.midy} led={Film.led_dc}")
+            self.lblInfo1.setText(f"cX={frame.cX} cY={frame.cY} midy={frame.midy}")
             if frame.sprocketSize is not None:
                 self.lblInfo2.setText(f"res={frame.locateHoleResult} sprocketSize={frame.sprocketSize}")
         else:
@@ -747,11 +756,6 @@ class QThreadScan(QtCore.QThread):
                 print("cY",self.frame.cY ,"oldY", oldY, "locateHoleResult", locateHoleResult,"cmd",self.cmd,"sprocketsize",self.frame.sprocketSize)
                 
                 if locateHoleResult != 0 :
-                    print(f"Thresh failed trying ratio")
-                    locateHoleResult = self.frame.locateSprocketHoleOld()#Frame.holeMinArea)
-                    print("Alt cY",self.frame.cY ,"oldY", oldY, "locateHoleResult", locateHoleResult,"cmd",self.cmd,"sprocketsize",self.frame.sprocketSize)
-                
-                if locateHoleResult != 0 :
                     self.cmd = 2
                     self.locateHoleResult = locateHoleResult
                     break
@@ -827,7 +831,6 @@ if __name__ == "__main__":
     safe = True#False
     if safe:
         try:
-            
             app = QApplication(sys.argv) 
             win = Window()
             if  picamera2_present:
@@ -841,8 +844,8 @@ if __name__ == "__main__":
         app = QApplication(sys.argv) 
         win = Window()
         win.show()
-        sys.exit(app.exec())
-        if  picamera2_present:
-                pidevi.cleanup()
+        #sys.exit(app.exec())
+        #if  picamera2_present:
+        #        pidevi.cleanup()
     Ini.saveConfig()
     sys.exit(0)
