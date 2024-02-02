@@ -576,7 +576,73 @@ class Frame:
         return locateHoleResult
 
 #=========================================================================
-    
+        
+    def findSprocket(self, x1, x2):
+        y1=0
+        y2=self.dy-1
+        if len(self.smoothedHisto)==0:
+            return None, None
+        maxPeakValue   = self.smoothedHisto[y1:y2].max()
+        minPeakValue   = self.smoothedHisto[y1:y2].min()
+        #print(f"maxPeakValue {maxPeakValue}")
+        if maxPeakValue<50:
+            print("Not enough range in hist -------------------------------------------------")
+        plt.plot(self.smoothedHisto)
+        sprocketStart = None
+        sprocketHeight = None
+        for z in range(int(maxPeakValue),int(minPeakValue),int(-0.1*(maxPeakValue-minPeakValue))):
+            plt.axhline(z, color='blue', linewidth=1)
+            peaks = []
+            for y in range(y1,y2):
+                if self.smoothedHisto[y]<z and self.smoothedHisto[y+1]>z:
+                    peaks.append(y)
+                    if len(peaks)>1:
+                        #print(f"testing for match with peak list{peaks}")
+                        for peak in peaks:
+                            testPeaks = [peak+self.stdSprocketHeight
+                                ,peak-self.stdSprocketHeight
+                                ,peak+self.stdSprocketHeight*self.ratio*1.02
+                                ,peak-self.stdSprocketHeight*self.ratio*1.02]
+                            #print(f"testpeaks {testPeaks}")
+                            valueSet = [peak]
+                            for i in range(len(testPeaks)):
+                            #for testPeak in testPeaks:
+                                upper = testPeaks[i]*1.1
+                                lower = testPeaks[i]*0.9
+                                #plt.axvline(testPeak, color='red', linewidth=1,label=f"testPeak")
+                                for loc in peaks:
+                                    if lower<loc<upper:
+                                        #print(f"peak {peak} testPeak {i} {testPeaks[i]} Found loc {loc} within {lower} {upper} so good")
+                                        if i==0:
+                                            #print(f"i is 0 so {peak} should be the sprocketstart")
+                                            sprocketStart = peak
+                                        elif i==1:
+                                            #print(f"i is 1 so the peak before {peak} should be the sprocketstart")
+                                            #print(f"try {peaks[peaks.index(peak)-1]}")
+                                            sprocketStart = peaks[peaks.index(peak)-1]
+                                        plt.axvline(loc, color='green', linewidth=1,label=f"yes")
+                                        valueSet.append(loc)
+                                    #else:
+                                    #    print(f"Failed peak {peak} testPeak {i} {testPeaks[i]} loc {loc} not within {lower} {upper} so fail")
+                                        
+                            #print(f"End of test with peak list found {len(valueSet)} values {valueSet} from peaks {peaks}")            
+                            if len(valueSet)>1 and sprocketStart:
+                                valueSet.sort()   
+                                #print(f"Got enough matching vals at {valueSet}")
+                                sprocketEnd = valueSet[valueSet.index(sprocketStart)+1]
+                                sprocketHeight = sprocketEnd - sprocketStart
+                                sprocketCentre = sprocketStart+0.5*sprocketHeight
+                                #print(f"sprocketCentre {sprocketCentre}")
+                                dist = abs((self.midy-sprocketCentre)/self.dy)
+                                print(f"{valueSet} sprocketstart {sprocketStart} sprocketEnd {sprocketEnd} sprocketSize {sprocketHeight} dist {dist:02f}")  
+                                if dist<0.3:
+                                    print(f"Found sprocket in range at {valueSet}")
+                                    plt.savefig(os.path.expanduser("~/findsprocket.png"))
+                                    return sprocketStart, sprocketHeight
+        plt.savefig(os.path.expanduser("~/findsprocketfail.png"))                        
+        return None, None
+
+
     def findYRange(self, x1, x2):
         y1=0
         y2=self.dy-1
@@ -598,29 +664,89 @@ class Frame:
         #thresh_vals = [self.outerThreshold, self.outerThreshold*0.9, self.outerThreshold*0.8,self.outerThreshold*0.7, self.outerThreshold*0.6,self.outerThreshold*0.5]
         #print(f"Thresh vals {thresh_vals} Frame.outerThresh {Frame.outerThresh}")
         finalZ = 0
-        for z in range(int(maxPeakValue),int(minPeakValue),int(-0.1*fullrange)):
-        #for z in thresh_vals:
+        thresh_vals = [self.outerThreshold]
+        #for z in range(int(maxPeakValue),int(minPeakValue),int(-0.1*fullrange)):
+        for z in thresh_vals:
             plt.axhline(z, color='blue', linewidth=1)
             peaks = []
-            trough = None
+            #trough = None
+            #count=0
+            #valueSets=[]
             for y in range(y1,y2):
                 if self.smoothedHisto[y]<z and self.smoothedHisto[y+1]>z:
                     peaks.append(y)
-                if self.smoothedHisto[y]==minPeakValue:
-                    self.trough=y
-            print(f"Peaks at {z:.2f} {peaks} thresh {self.outerThreshold:.2f}")
-            closePeaks = 0
-            for peak in peaks:
-                if abs(peak-self.midy)/self.dy<0.3:
-                    print(f"Found a close peak at peak {peak}")
-                    closePeaks+=1
-            if len(peaks)>2 and len(peaks)<6 and finalZ==0 and closePeaks>1:
-                self.peaks=peaks
-                finalZ = z
-                print(f"Got enough peaks {self.peaks} {len(self.peaks)} at {z:.2f} midy {self.midy} thresh {self.outerThreshold:.2f} trough at {self.trough}")
-                break
-            for i in self.peaks:
-                plt.axvline(i, color='blue', linewidth=1)
+                    #plt.clf() #Clear graph
+                    #plt.plot(self.smoothedHisto)
+        
+                    print(f"Found a new peak {y}, testing for match with peak list{peaks}")
+                    for peak in peaks:
+                        testPeaks = [peak+self.stdSprocketHeight
+                            ,peak-self.stdSprocketHeight
+                            ,peak+self.stdSprocketHeight*self.ratio*1.02
+                            ,peak-self.stdSprocketHeight*self.ratio*1.02]
+                        #print(f"peak {peak} self.stdSprocketHeight {self.stdSprocketHeight} peak+self.stdSprocketHeight*self.ratio {peak+self.stdSprocketHeight*self.ratio}")
+                        #plt.axvline(testPeaks[0], color='orange', linewidth=1,label=f"tp1")
+                        #plt.axvline(testPeaks[1], color='green', linewidth=1,label=f"tp2")
+                        #plt.axvline(testPeaks[2], color='blue', linewidth=1,label=f"tp3")
+                        #plt.axvline(testPeaks[3], color='cyan', linewidth=1,label=f"tp4")
+                        #plt.axvline(peak, color='red', linewidth=1,label=f"found")
+                        #plt.legend(loc=0)
+                        #print(f"testpeaks {testPeaks}")
+                        valueSet = [peak]
+                        for i in range(len(testPeaks)):
+                        #for testPeak in testPeaks:
+                            upper = testPeaks[i]*1.1
+                            lower = testPeaks[i]*0.9
+                            #plt.axvline(testPeak, color='red', linewidth=1,label=f"testPeak")
+                            for loc in peaks:
+                                if lower<loc<upper:
+                                    #print(f"peak {peak} testPeak {i} {testPeaks[i]} Found {loc} within {lower} {upper} so good")
+                                    if i==0:
+                                        print(f"i is 0 so {peak} should be the sprocketstart")
+                                    elif i==1:
+                                        print(f"i is 1 so the peak before {peak} should be the sprocketstart")
+                                        print(f"try {peaks[peaks.index(peak)-1]}")
+                                    plt.axvline(loc, color='green', linewidth=1,label=f"yes")
+                                    valueSet.append(loc)
+                                #else:
+                                    #print(f"peak {peak} testPeak {testPeak} Item {loc} not in range {lower} {upper} for {testPeak} so fail")
+                                    #plt.axvline(loc, color='red', linewidth=1,label=f"no")
+                            #valueSets.append(valueSet)
+                        print(f"{valueSet}")  
+                        if len(valueSet)>2:
+                            valueSet.sort()
+                            print(f"Found sprocket at {valueSet}")
+                            for i in range(len(valueSet)-1):
+                                testVal = valueSet[i+1]/self.ratio
+                                print(f"Testing {valueSet[i]} against {valueSet[i+1]} {testVal}")
+                            break
+
+
+
+
+                    #count+=1
+                    #if count>2:
+                    #    break
+            #print(valueSets)          
+
+                #if self.smoothedHisto[y]==minPeakValue:
+                #    self.trough=y
+            #print(f"Peaks at {z:.2f} {peaks} thresh {self.outerThreshold:.2f}")
+            #closePeaks = 0
+            #for peak in peaks:
+            #    if abs(peak-self.midy)/self.dy<0.3:
+            #        print(f"Found a close peak at peak {peak}")
+            #        closePeaks+=1
+            #if len(peaks)>2 and len(peaks)<6 and finalZ==0 and closePeaks>1:
+            #    self.peaks=peaks
+            #    finalZ = z
+            #    print(f"Got enough peaks {self.peaks} {len(self.peaks)} at {z:.2f} midy {self.midy} thresh {self.outerThreshold:.2f} trough at {self.trough}")
+            #    break
+            #for i in self.peaks:
+            #    plt.axvline(i, color='blue', linewidth=1)
+
+
+        #print(f"Found sprocket at {valueSet}")
         plt.xlim([0, self.dy])
         plt.savefig(os.path.expanduser("~/my_cv2histb.png"))
         plt.clf()
@@ -710,6 +836,112 @@ class Frame:
         return cY, sprocketHeight
     
     def locateSprocketHoleRatio(self):
+        filterSize = 25                 # smoothing kernel - leave it untouched
+        midy = self.midy
+        self.peaks = []
+        self.smoothedHisto = []
+        lX = self.findSprocketLeft()
+        x1 = int(lX+(0.01*self.dx))#buffer for rough edge
+        if not x1:
+            cv2.imwrite(os.path.expanduser("~/ratioa.png"), self.image)
+            cv2.imwrite(os.path.expanduser("~/ratiothresh.png"), self.thresh)
+            locateHoleResult = 5 #can't find left edge
+            print(f"Setting result to 5 - can't find left edge {self.imagePathName}")
+            raise Exception(f"Setting result to 5 - can't find left edge {self.imagePathName}")
+    
+        x2 = x1+int(self.stdSprocketWidth*0.8)
+        self.imageHoleCrop = self.image[:,int(x1):int(x1+2*(x2-x1)),:]
+        self.imageHoleCropHide = self.image[:,int(x1):int(x2),:]
+        hsvMargin=50
+        image = cv2.cvtColor(self.imageHoleCropHide, cv2.COLOR_BGR2HSV)
+        lower = np.array([0, 0, 255-hsvMargin], dtype="uint8")
+        upper = np.array([255, hsvMargin, 255], dtype="uint8")
+        mask = cv2.inRange(image, lower, upper)
+        masked = cv2.bitwise_and(self.imageHoleCropHide, self.imageHoleCropHide, mask=mask)
+        cv2.imwrite(os.path.expanduser("~/whitemsk.png"), mask)
+        cv2.imwrite(os.path.expanduser("~/masked.png"), masked)
+        cv2.imwrite(os.path.expanduser("~/imageHoleCropHide.png"), self.imageHoleCropHide)
+        #sprocketEdges = np.absolute(cv2.Sobel(self.imageHoleCropHide,cv2.CV_64F,0,1,ksize=3))
+        sprocketEdges = np.absolute(cv2.Sobel(mask,cv2.CV_64F,0,1,ksize=3))
+        #histogram     = np.mean(sprocketEdges,axis=(1,2))
+        histogram     = np.mean(sprocketEdges,axis=(1))
+        self.smoothedHisto = cv2.GaussianBlur(histogram,(1,filterSize),0)
+        Frame.ratioX1 = x1
+        Frame.ratioX2 = x2
+        #Find the y search range
+        sprocketStart, sprocketHeight = self.findSprocket(x1,x2)
+        print(f"Processing {sprocketStart} {sprocketHeight}")
+        if not sprocketStart or not sprocketHeight:
+            locateHoleResult = 4 #Cant find sprocket/gap pattern
+            print("Setting result to 4 - can't match pattern")
+        else:
+            cY = sprocketStart+0.5*sprocketHeight
+            self.sprocketHeight = sprocketHeight
+            if self.minSprocketHeight<self.sprocketHeight and self.sprocketHeight<self.maxSprocketHeight:
+                print(f"Valid sprocket size {self.sprocketHeight}")
+                locateHoleResult = 0 #Sprocket size within range
+            elif self.sprocketHeight>self.maxSprocketHeight:
+                print(f"Invalid sprocket size too big {self.sprocketHeight}")
+                locateHoleResult = 2 #Sprocket size too big
+                print("Setting result to 2 - sprocket size too big")
+            else:
+                print(f"probably not enough peaks found {len(self.peaks)}")
+                self.sprocketHeight   = 0
+                locateHoleResult = 1
+        rX = self.findSprocketRight(x1, x2, self.sprocketHeight, cY)
+        oldcX = self.cX
+        oldcY = self.cY
+        oldrX = self.rX
+        if not rX:
+            locateHoleResult = 3 #Right edge not detected
+            print("Setting result to 3 - right edge not detected")
+            #raise Exception(f"Setting result to 3 - can't find right edge {self.imagePathName}")
+            return locateHoleResult
+        else:
+
+            self.cX = int(lX+rX/2)
+            self.cY = cY
+            self.rX = rX
+
+        #locateHoleResult = 0
+        #print(f"InnerLow {innerLow} InnerHigh {innerHigh} cY {cY} rX {rX}")
+        #print(f"Found sprocket edge {locatedX} at {rX}")
+        print("cY=", self.cY, "oldcY=", oldcY, "locateHoleResult=", locateHoleResult)
+        p1 = (int(x2-x1), 0) 
+        p2 = (int(x2-x1), self.dy-1) 
+        print(f"Vertical line points {p1} {p2}")
+        cv2.line(self.imageHoleCrop, p1, p2, (255, 0, 0), 3) #View X1 Blue
+        p1 = (0, int(self.cY))
+        p2 = (int(self.rX-x1), int(self.cY))
+        print(f"Horizontal line points {p1} {p2}")
+        cv2.line(self.imageHoleCrop, p1, p2, (0, 0, 255), 3) #Horiz
+        p1 = (int(self.rX-x1), 0) 
+        p2 = (int(self.rX-x1), self.dy) 
+        print(f"Vertical line points {p1} {p2}")
+        cv2.line(self.imageHoleCrop, p1, p2, (0, 0, 255), 3) #Vert
+        #cv2.line(self.image, p1, p2, (0, 0, 255), 3) #Vert
+        # show target midy
+        p1 = (0, int(midy)) 
+        p2 = (int(self.rX-x1), int(midy))
+        print(f"MidY line points {p1} {p2}")
+        cv2.line(self.imageHoleCrop, p1, p2, (0, 0, 0), 3)  # black line
+        p1 = (0, int(midy+3))
+        p2 = (int(self.rX-x1), int(midy+3))
+        cv2.line(self.imageHoleCrop, p1, p2, (255, 255, 255), 3) # white line
+        
+        #self.imageHoleCrop = cv2.resize(self.imageHoleCrop, (0,0), fx=1/self.ScaleFactor, fy=1/self.ScaleFactor)
+
+
+        cv2.imwrite(os.path.expanduser("~/ratiosprocketStrip.png"), self.imageHoleCrop)
+        #cv2.imwrite(self.resultImagePath, self.imageHoleCrop)
+        cv2.imwrite(os.path.expanduser("~/ratioimage.png"), self.image)
+        #if locatedX:
+        #    cv2.imwrite(os.path.expanduser("~/horizontalStrip.png"), horizontalStrip)  
+        #self.locateHoleResult = locateHoleResult
+        return locateHoleResult
+
+
+    def locateSprocketHoleRatioOld(self):
         # Based on https://github.com/cpixip/sprocket_detection
         print(f"locateSprocketHole {self.image.shape} {self.imagePathName}")
         filterSize = 25                 # smoothing kernel - leave it untouched
@@ -754,6 +986,8 @@ class Frame:
         Frame.ratioX1 = x1
         Frame.ratioX2 = x2
         #Find the y search range
+        #sprocketStart, sprocketSize = self.findSprocket(x1,x2)
+        #raise Exception(f"Stopping here")
         y1, y2 = self.findYRange(x1,x2)
         if not y1 and y2:
             locateHoleResult = 4 #Cant find sprocket/gap pattern
@@ -882,8 +1116,8 @@ class Frame:
         for x1 in range(searchStart,searchEnd,step):
             strip = self.threshrg[:,int(x1):int(x1+step),]
             ratio = float(np.sum(strip == 255)/(self.dy*step))
-            print(f"Ratio calc result {ratio} white {np.sum(strip==255)} / steparea {self.dy*step}")
-            print(f"x {x1} ratio {ratio} {np.sum(strip == 255)} dx {self.dy*step}")
+            #print(f"Ratio calc result {ratio} white {np.sum(strip==255)} / steparea {self.dy*step}")
+            #print(f"x {x1} ratio {ratio} {np.sum(strip == 255)} dx {self.dy*step}")
             p1 = (int(x1), int(0)) 
             p2 = (int(x1), int(self.dy)) 
             cv2.line(self.image, p1, p2, (255, 255, 255), 3) #Vert
