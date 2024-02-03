@@ -56,6 +56,8 @@ class Ini:
             Frame.r8_ratio = config[Ini.frame].getfloat('r8_ratio')
             Frame.r8_midx = config[Ini.frame].getint('r8_midx')
             Frame.r8_midy = config[Ini.frame].getint('r8_midy')
+            Frame.ratioX1 = config[Ini.frame].getint('ratioX1')
+            Frame.ratioX2 = config[Ini.frame].getint('ratioX2')
             Frame.analysisType = config[Ini.frame]['analysisType']
             Frame.s8_frameCrop.load(config)
             #Frame.s8_holeCrop.load(config)
@@ -103,11 +105,13 @@ class Ini:
         config[Ini.frame]['s8_midx'] = str(Frame.s8_midx)
         config[Ini.frame]['s8_midy'] = str(Frame.s8_midy)
         config[Ini.frame]['r8_stdSprocketHeight'] = str(Frame.r8_stdSprocketHeight)
-        config[Ini.frame]['r8_stdSprockeWidth'] = str(Frame.r8_stdSprocketWidth)
+        config[Ini.frame]['r8_stdSprocketWidth'] = str(Frame.r8_stdSprocketWidth)
         config[Ini.frame]['r8_ratio'] = str(Frame.r8_ratio)
         config[Ini.frame]['r8_midx'] = str(Frame.r8_midx)
         config[Ini.frame]['r8_midy'] = str(Frame.r8_midy)
         config[Ini.frame]['analysisType'] = str(Frame.analysisType)
+        config[Ini.frame]['ratioX1'] = str(Frame.ratioX1)
+        config[Ini.frame]['ratioX2'] = str(Frame.ratioX2)
 
         Frame.s8_frameCrop.save(config)
         #Frame.s8_holeCrop.save(config)
@@ -195,8 +199,8 @@ class Frame:
     r8_frameCrop = Rect("r8_frame_crop", 146, 28, 146+814, 28+565)
     #r8_holeCrop = Rect("r8_hole_crop", 75, 0, 240, 276)
     #r8_holeCrop = Rect("r8_hole_crop", 385, 0, 1230, 1415)
-    r8_whiteCrop = Rect("r8_white_crop",  436, 1078, 631, 1362)
-    r8_stdSprocketHeight = 0.1
+    r8_whiteCrop = Rect("r8_white_crop",  -185, -109, -27, 122)
+    r8_stdSprocketHeight = 0.13
     r8_stdSprocketWidth = 0.13    
     r8_midx = 64
     r8_midy = 120
@@ -245,6 +249,7 @@ class Frame:
             self.ratio = Frame.s8_ratio
             self.midy = Frame.s8_midy*self.ScaleFactor
         else:
+            print(f"Frame.r8_stdSprocketWidth {Frame.r8_stdSprocketWidth}")
             self.stdSprocketHeight = Frame.r8_stdSprocketHeight*self.dy
             self.stdSprocketWidth = Frame.r8_stdSprocketWidth*self.dx
             #self.holeCrop = Frame.r8_holeCrop#Rect("hole_crop", Frame.r8_holeCrop.x1*self.ScaleFactor, 0, Frame.r8_holeCrop.x2*self.ScaleFactor, self.dy-1)
@@ -264,6 +269,7 @@ class Frame:
         self.filmEdge = 0
         self.sprocketSize = 0    
         self.histogram = None
+        self.sprocketHeight = None
         #self.histogram = cv2.imread(os.path.expanduser("~/my_cv2hist_lim.png"))
         self.locateHoleResult = 1
         #print(f"init complete {self.__dict__}")
@@ -367,7 +373,9 @@ class Frame:
             print(f"Ratio cY {self.cY} rX {self.rX} locateHoleResult {locateHoleResult}")
         self.locateHoleResult = locateHoleResult
         if not locateHoleResult==0:
-            raise Exception(f"Nonzero locateHoleResult {locateHoleResult}")
+            print(f"Nonzero locateHoleResult {locateHoleResult}")
+            #raise Exception(f"Nonzero locateHoleResult {locateHoleResult}"
+        return locateHoleResult
 
     # Based on https://github.com/cpixip/sprocket_detection
     # initial testing had issues with selecting point between 2 holes TODO
@@ -590,7 +598,7 @@ class Frame:
         plt.plot(self.smoothedHisto)
         sprocketStart = None
         sprocketHeight = None
-        for z in range(int(maxPeakValue*0.8),int(minPeakValue),int(-0.1*(maxPeakValue-minPeakValue))):
+        for z in range(int(maxPeakValue*0.6),int(maxPeakValue*0.4),int(-0.1*(maxPeakValue-minPeakValue))):
             plt.axhline(z, color='blue', linewidth=1)
             peaks = []
             for y in range(y1,y2):
@@ -598,7 +606,8 @@ class Frame:
                     peaks.append(y)
                     if len(peaks)>1:
                         print(f"testing for match with peak list {peaks} at {z}")
-                        for peak in peaks:
+                        for peak in peaks:#List of peaks discovered at this level
+                            plt.plot(self.smoothedHisto)
                             testPeaks = [peak+self.stdSprocketHeight
                                 ,peak-self.stdSprocketHeight
                                 ,peak+self.stdSprocketHeight*self.ratio*1.02
@@ -606,13 +615,19 @@ class Frame:
                             #print(f"testpeaks {testPeaks}")
                             valueSet = [peak]
                             sprocketStart = None
-                            for i in range(len(testPeaks)):
+                            for i in range(len(testPeaks)):#sprocket/gap fup/down from current peak test for correct 
                             #for testPeak in testPeaks:
                                 upper = testPeaks[i]*1.1
                                 lower = testPeaks[i]*0.9
+                                if 800<peak<=900:
+                                    plt.axvline(upper, color='orange', linewidth=1,label=f"upper_{testPeaks[i]}")
+                                    plt.axvline(lower, color='orange', linewidth=1,label=f"lower_{testPeaks[i]}")
+                                    
                                 #plt.axvline(testPeak, color='red', linewidth=1,label=f"testPeak")
                                 for loc in peaks:
                                     if lower<loc<upper:
+                                        if 800<peak<=900:
+                                            plt.axvline(testPeaks[i], color='green', linewidth=1,label=f"inrange_{testPeaks[i]}")
                                         print(f"peak {peak} testPeak {i} {testPeaks[i]} Found loc {loc} within {lower} {upper} so good")
                                         if i==0:
                                             print(f"i is 0 so {peak} should be the sprocketstart")
@@ -624,6 +639,8 @@ class Frame:
                                         plt.axvline(loc, color='green', linewidth=1,label=f"yes")
                                         valueSet.append(loc)
                                     else:
+                                        if 800<peak<=900:
+                                            plt.axvline(testPeaks[i], color='red', linewidth=1,label=f"{testPeaks[i]}")
                                         print(f"Failed peak {peak} testPeak {i} {testPeaks[i]} loc {loc} not within {lower} {upper} so fail")
                                         
                             #print(f"End of test with peak list found {len(valueSet)} values {valueSet} from peaks {peaks}")            
@@ -639,8 +656,12 @@ class Frame:
                                 if dist<0.3:
                                     print(f"Found sprocket in range at {valueSet}")
                                     plt.savefig(os.path.expanduser("~/findsprocket.png"))
+                                    plt.clf()
                                     return sprocketStart, sprocketHeight
-                    plt.savefig(os.path.expanduser(f"~/findsprocketfail_{y}.png"))                        
+                            else:
+                                plt.savefig(os.path.expanduser(f"~/findsprocketfail_{peak}.png"))
+                                plt.clf()
+                                
         return None, None
 
 
@@ -849,8 +870,10 @@ class Frame:
             locateHoleResult = 5 #can't find left edge
             print(f"Setting result to 5 - can't find left edge {self.imagePathName}")
             raise Exception(f"Setting result to 5 - can't find left edge {self.imagePathName}")
-    
+       
         x2 = x1+int(self.stdSprocketWidth*0.8)
+        x1 = Frame.ratioX1
+        x2 = Frame.ratioX2
         self.imageHoleCrop = self.image[:,int(x1):int(x1+2*(x2-x1)),:]
         self.imageHoleCropHide = self.image[:,int(x1):int(x2),:]
         hsvMargin=50
@@ -867,8 +890,6 @@ class Frame:
         #histogram     = np.mean(sprocketEdges,axis=(1,2))
         histogram     = np.mean(sprocketEdges,axis=(1))
         self.smoothedHisto = cv2.GaussianBlur(histogram,(1,filterSize),0)
-        Frame.ratioX1 = x1
-        Frame.ratioX2 = x2
         #Find the y search range
         sprocketStart, sprocketHeight = self.findSprocket(x1,x2)
         print(f"Processing {sprocketStart} {sprocketHeight}")
@@ -881,6 +902,8 @@ class Frame:
             if self.minSprocketHeight<self.sprocketHeight and self.sprocketHeight<self.maxSprocketHeight:
                 print(f"Valid sprocket size {self.sprocketHeight}")
                 locateHoleResult = 0 #Sprocket size within range
+                #Frame.ratioX1 = x1
+                #Frame.ratioX2 = x2
             elif self.sprocketHeight>self.maxSprocketHeight:
                 print(f"Invalid sprocket size too big {self.sprocketHeight} max {self.maxSprocketHeight}")
                 locateHoleResult = 2 #Sprocket size too big
