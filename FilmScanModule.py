@@ -252,8 +252,8 @@ class Frame:
             self.whiteCrop = Frame.r8_whiteCrop
             self.ratio = Frame.r8_ratio
             self.midy = Frame.r8_midy*self.ScaleFactor
-        self.minSprocketHeight = self.stdSprocketHeight*0.9
-        self.maxSprocketHeight = self.stdSprocketHeight*1.1
+        self.minSprocketHeight = self.stdSprocketHeight*0.7
+        self.maxSprocketHeight = self.stdSprocketHeight*1.3
         print(f"Sprocket min {self.minSprocketHeight} max {self.maxSprocketHeight}")
         self.midx = 115*self.ScaleFactor   # always overwitten 
         #self.midy = self.dy//2#240*self.ScaleFactor 
@@ -590,14 +590,14 @@ class Frame:
         plt.plot(self.smoothedHisto)
         sprocketStart = None
         sprocketHeight = None
-        for z in range(int(maxPeakValue),int(minPeakValue),int(-0.1*(maxPeakValue-minPeakValue))):
+        for z in range(int(maxPeakValue*0.8),int(minPeakValue),int(-0.1*(maxPeakValue-minPeakValue))):
             plt.axhline(z, color='blue', linewidth=1)
             peaks = []
             for y in range(y1,y2):
                 if self.smoothedHisto[y]<z and self.smoothedHisto[y+1]>z:
                     peaks.append(y)
                     if len(peaks)>1:
-                        #print(f"testing for match with peak list{peaks}")
+                        print(f"testing for match with peak list {peaks} at {z}")
                         for peak in peaks:
                             testPeaks = [peak+self.stdSprocketHeight
                                 ,peak-self.stdSprocketHeight
@@ -605,6 +605,7 @@ class Frame:
                                 ,peak-self.stdSprocketHeight*self.ratio*1.02]
                             #print(f"testpeaks {testPeaks}")
                             valueSet = [peak]
+                            sprocketStart = None
                             for i in range(len(testPeaks)):
                             #for testPeak in testPeaks:
                                 upper = testPeaks[i]*1.1
@@ -612,24 +613,24 @@ class Frame:
                                 #plt.axvline(testPeak, color='red', linewidth=1,label=f"testPeak")
                                 for loc in peaks:
                                     if lower<loc<upper:
-                                        #print(f"peak {peak} testPeak {i} {testPeaks[i]} Found loc {loc} within {lower} {upper} so good")
+                                        print(f"peak {peak} testPeak {i} {testPeaks[i]} Found loc {loc} within {lower} {upper} so good")
                                         if i==0:
-                                            #print(f"i is 0 so {peak} should be the sprocketstart")
+                                            print(f"i is 0 so {peak} should be the sprocketstart")
                                             sprocketStart = peak
                                         elif i==1:
-                                            #print(f"i is 1 so the peak before {peak} should be the sprocketstart")
+                                            print(f"i is 1 so the peak before {peak} should be the sprocketstart")
                                             #print(f"try {peaks[peaks.index(peak)-1]}")
                                             sprocketStart = peaks[peaks.index(peak)-1]
                                         plt.axvline(loc, color='green', linewidth=1,label=f"yes")
                                         valueSet.append(loc)
-                                    #else:
-                                    #    print(f"Failed peak {peak} testPeak {i} {testPeaks[i]} loc {loc} not within {lower} {upper} so fail")
+                                    else:
+                                        print(f"Failed peak {peak} testPeak {i} {testPeaks[i]} loc {loc} not within {lower} {upper} so fail")
                                         
                             #print(f"End of test with peak list found {len(valueSet)} values {valueSet} from peaks {peaks}")            
                             if len(valueSet)>1 and sprocketStart:
                                 valueSet.sort()   
-                                #print(f"Got enough matching vals at {valueSet}")
-                                sprocketEnd = valueSet[valueSet.index(sprocketStart)+1]
+                                print(f"Got enough matching vals at {valueSet} sprocketstart {sprocketStart}")
+                                sprocketEnd = valueSet[valueSet.index(sprocketStart)+1]#TODO crashing here when peak is too low ValueError: 14 is not in list
                                 sprocketHeight = sprocketEnd - sprocketStart
                                 sprocketCentre = sprocketStart+0.5*sprocketHeight
                                 #print(f"sprocketCentre {sprocketCentre}")
@@ -639,7 +640,7 @@ class Frame:
                                     print(f"Found sprocket in range at {valueSet}")
                                     plt.savefig(os.path.expanduser("~/findsprocket.png"))
                                     return sprocketStart, sprocketHeight
-        plt.savefig(os.path.expanduser("~/findsprocketfail.png"))                        
+                    plt.savefig(os.path.expanduser(f"~/findsprocketfail_{y}.png"))                        
         return None, None
 
 
@@ -881,7 +882,7 @@ class Frame:
                 print(f"Valid sprocket size {self.sprocketHeight}")
                 locateHoleResult = 0 #Sprocket size within range
             elif self.sprocketHeight>self.maxSprocketHeight:
-                print(f"Invalid sprocket size too big {self.sprocketHeight}")
+                print(f"Invalid sprocket size too big {self.sprocketHeight} max {self.maxSprocketHeight}")
                 locateHoleResult = 2 #Sprocket size too big
                 print("Setting result to 2 - sprocket size too big")
             else:
@@ -1068,7 +1069,7 @@ class Frame:
         filmEdge = self.filmEdge
         searchRange = self.stdSprocketWidth*1.2#450 #may need to adjust with image size
         ratioThresh = 0.1 #may need to adjust with film format
-        filmEdgeTrigger = 0.017
+        filmEdgeTrigger = 0.01
         #searchStart = int(self.holeCrop.x1-searchRange)
         searchStart = int(0.12*self.dx)#int(0.05*self.dx) #to the right of left edge of films
         searchStart =220 #TODO set frame edge should only be full black on film edge
@@ -1083,9 +1084,19 @@ class Frame:
         upper = np.array([hMax, sMax, vMax])
         hsv = cv2.cvtColor(self.image, cv2.COLOR_BGR2HSV)
         self.threshrg = cv2.inRange(hsv, lower, upper) #TODO why am I using a different thresh??
+
+        hsvMargin=50
+        image = cv2.cvtColor(self.image, cv2.COLOR_BGR2HSV)
+        lower = np.array([0, 0, 255-hsvMargin], dtype="uint8")
+        upper = np.array([255, hsvMargin, 255], dtype="uint8")
+        mask = cv2.inRange(image, lower, upper)
+        #self.threshrgmsk = cv2.bitwise_and(self.image, self.image, mask=mask)
+        self.threshrgmsk = mask
+
         _, self.thresh = cv2.threshold(self.image, Frame.whiteThreshold, 255, 0)
         cv2.imwrite(os.path.expanduser("~/convertfail.png"),self.thresh)
         cv2.imwrite(os.path.expanduser("~/convertfailrg.png"),self.threshrg)
+        cv2.imwrite(os.path.expanduser("~/convertfailrgmsk.png"),self.threshrgmsk)
         hsv = None
         step = 1
         print(f"Finding left edge from {searchStart} to {searchEnd}")
@@ -1095,10 +1106,10 @@ class Frame:
             #print(self.threshrg.shape)
             
             #strip = self.thresh[:,int(x1):int(x1+step),] #TODO reduce y size
-            strip = self.threshrg[:,int(x1):int(x1+step),] #TODO reduce y size
+            strip = self.threshrgmsk[:,int(x1):int(x1+step),] #TODO reduce y size
             
             ratio = float(np.sum(strip == 255)/(self.dy*step))
-            #print(f"x {x1} ratio {ratio} {np.sum(strip == 255)} dx {self.dx*step}")
+            print(f"x {x1} ratio {ratio} {np.sum(strip == 255)} dx {self.dx*step}")
             p1 = (int(x1), int(0)) 
             p2 = (int(x1), int(self.dy)) 
             cv2.line(self.image, p1, p2, (128, 128, 128), 1) #grey to film edge
@@ -1111,12 +1122,12 @@ class Frame:
                 cv2.line(self.image, p1, p2, (255, 0, 0), 2) #Vert
                 break
         step = int(5*self.ScaleFactor) #increase for faster
-        searchStart = int(filmEdge+(0.01*self.dx))#buffer for rough edge
+        searchStart = int(filmEdge+(0.015*self.dx))#buffer for rough edge
         searchEnd = int(searchStart+searchRange)
         for x1 in range(searchStart,searchEnd,step):
-            strip = self.threshrg[:,int(x1):int(x1+step),]
+            strip = self.threshrgmsk[:,int(x1):int(x1+step),]
             ratio = float(np.sum(strip == 255)/(self.dy*step))
-            #print(f"Ratio calc result {ratio} white {np.sum(strip==255)} / steparea {self.dy*step}")
+            print(f"Ratio calc result {ratio} white {np.sum(strip==255)} / steparea {self.dy*step}")
             #print(f"x {x1} ratio {ratio} {np.sum(strip == 255)} dx {self.dy*step}")
             p1 = (int(x1), int(0)) 
             p2 = (int(x1), int(self.dy)) 
