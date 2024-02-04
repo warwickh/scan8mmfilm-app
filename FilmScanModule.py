@@ -609,8 +609,8 @@ class Frame:
         plt.plot(self.smoothedHisto)
         sprocketStart = None
         sprocketHeight = None
-        for z in range(int(maxPeakValue*0.6),int(maxPeakValue*0.4),int(-0.1*(maxPeakValue-minPeakValue))):
-            plt.axhline(z, color='blue', linewidth=1)
+        for z in range(int(maxPeakValue*0.6),int(maxPeakValue*0.2),min(1,int(-0.2*(maxPeakValue-minPeakValue)))):
+            #plt.axhline(z, color='blue', linewidth=1)
             peaks = []
             for y in range(y1,y2):
                 if self.smoothedHisto[y]<z and self.smoothedHisto[y+1]>z:
@@ -619,6 +619,7 @@ class Frame:
                         print(f"testing for match with peak list {peaks} at {z}")
                         for peak in peaks:#List of peaks discovered at this level
                             plt.plot(self.smoothedHisto)
+                            plt.axhline(z, color='blue', linewidth=1)
                             testPeaks = [peak+self.stdSprocketHeight
                                 ,peak-self.stdSprocketHeight
                                 ,peak+self.stdSprocketHeight*self.ratio*1.02
@@ -644,9 +645,11 @@ class Frame:
                                             print(f"i is 0 so {peak} should be the sprocketstart")
                                             sprocketStart = peak
                                         elif i==1:
+                                            #print(f"i is 1 so the peak before {peak} should be the sprocketstart")
                                             print(f"i is 1 so the peak before {peak} should be the sprocketstart")
                                             #print(f"try {peaks[peaks.index(peak)-1]}")
-                                            sprocketStart = peaks[peaks.index(peak)-1]
+                                            #sprocketStart = peaks[peaks.index(peak)-1]
+                                            sprocketStart = loc
                                         plt.axvline(loc, color='green', linewidth=1,label=f"yes")
                                         valueSet.append(loc)
                                     else:
@@ -875,6 +878,8 @@ class Frame:
         self.smoothedHisto = []
         lX = self.findSprocketLeft()
         x1 = int(lX+(0.01*self.dx))#buffer for rough edge
+        cY = self.cY
+        rX = None
         if not x1:
             cv2.imwrite(os.path.expanduser("~/ratioa.png"), self.image)
             cv2.imwrite(os.path.expanduser("~/ratiothresh.png"), self.thresh)
@@ -913,6 +918,7 @@ class Frame:
             if self.minSprocketHeight<self.sprocketHeight and self.sprocketHeight<self.maxSprocketHeight:
                 print(f"Valid sprocket size {self.sprocketHeight}")
                 locateHoleResult = 0 #Sprocket size within range
+                rX = self.findSprocketRight(x1, x2, self.sprocketHeight, cY)
                 #Frame.ratioX1 = x1
                 #Frame.ratioX2 = x2
             elif self.sprocketHeight>self.maxSprocketHeight:
@@ -923,7 +929,6 @@ class Frame:
                 print(f"probably not enough peaks found {len(self.peaks)}")
                 self.sprocketHeight   = 0
                 locateHoleResult = 1
-        rX = self.findSprocketRight(x1, x2, self.sprocketHeight, cY)
         oldcX = self.cX
         oldcY = self.cY
         oldrX = self.rX
