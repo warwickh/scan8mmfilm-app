@@ -281,9 +281,9 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.showHoleCrop()
         else:
             if self.rbtnPosition.isChecked() :
-                self.adjustableRects[self.adjRectIx].adjY(1)
+                self.adjustableRects[self.adjRectIx].adjY(10)
             else:
-                self.adjustableRects[self.adjRectIx].adjYSize(1)
+                self.adjustableRects[self.adjRectIx].adjYSize(10)
             self.refreshFrame() 
             self.showAdjustValues()
             
@@ -298,27 +298,27 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.showHoleCrop()
         else:
             if self.rbtnPosition.isChecked() :
-                self.adjustableRects[self.adjRectIx].adjY(-1)
+                self.adjustableRects[self.adjRectIx].adjY(-10)
             else:
-                self.adjustableRects[self.adjRectIx].adjYSize(-1)
+                self.adjustableRects[self.adjRectIx].adjYSize(-10)
             self.refreshFrame()
             self.showAdjustValues()
             
     def left(self):
         if self.rbtnCrop.isChecked():
             if self.rbtnPosition.isChecked() :
-                self.adjustableRects[self.adjRectIx].adjX(-1)
+                self.adjustableRects[self.adjRectIx].adjX(-10)
             else:
-                self.adjustableRects[self.adjRectIx].adjXSize(-1)
+                self.adjustableRects[self.adjRectIx].adjXSize(-10)
             self.refreshFrame()
             self.showAdjustValues()
             
     def right(self):
         if self.rbtnCrop.isChecked():
             if self.rbtnPosition.isChecked() :
-                self.adjustableRects[self.adjRectIx].adjX(1)
+                self.adjustableRects[self.adjRectIx].adjX(10)
             else:
-                self.adjustableRects[self.adjRectIx].adjXSize(1)
+                self.adjustableRects[self.adjRectIx].adjXSize(10)
             self.refreshFrame()
             self.showAdjustValues()
 

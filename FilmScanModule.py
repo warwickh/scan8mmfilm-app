@@ -196,10 +196,10 @@ class Frame:
     s8_stdSprocketWidth = 0.055
     s8_midx = 64
     s8_midy = 240
-    r8_frameCrop = Rect("r8_frame_crop", 146, 28, 146+814, 28+565)
+    r8_frameCrop = Rect("r8_frame_crop", 15, 11, 1383, 1022)
     #r8_holeCrop = Rect("r8_hole_crop", 75, 0, 240, 276)
     #r8_holeCrop = Rect("r8_hole_crop", 385, 0, 1230, 1415)
-    r8_whiteCrop = Rect("r8_white_crop",  -185, -109, -27, 122)
+    r8_whiteCrop = Rect("r8_white_crop",  -463, 947, -38, 1221)
     r8_stdSprocketHeight = 0.13
     r8_stdSprocketWidth = 0.13    
     r8_midx = 64
@@ -345,7 +345,7 @@ class Frame:
             img = cv2.imread(threshFilename)
         else:
             #img = self.image[Frame.whiteCrop.y1:Frame.whiteCrop.y2, Frame.whiteCrop.x1:Frame.whiteCrop.x2]
-            img = self.image[self.cY+self.whiteCrop.y1:self.cY+self.whiteCrop.y2, self.rX+self.whiteCrop.x1:self.rX+self.whiteCrop.x2]
+            img = self.image[int(self.cY+self.whiteCrop.y1):int(self.cY+self.whiteCrop.y2),int(self.rX+self.whiteCrop.x1):int(self.rX+self.whiteCrop.x2)]
         dy,dx,_ = img.shape
         #img = imageSmall[self.whiteCrop.y1:self.whiteCrop.y2, self.whiteCrop.x1:self.whiteCrop.x2]
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
