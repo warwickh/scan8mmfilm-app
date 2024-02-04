@@ -59,6 +59,7 @@ class Ini:
             Frame.ratioX1 = config[Ini.frame].getint('ratioX1')
             Frame.ratioX2 = config[Ini.frame].getint('ratioX2')
             Frame.analysisType = config[Ini.frame]['analysisType']
+            Frame.whiteThreshold = config[Ini.frame].getint('whiteThreshold')
             Frame.s8_frameCrop.load(config)
             #Frame.s8_holeCrop.load(config)
             Frame.r8_frameCrop.load(config)
@@ -112,6 +113,7 @@ class Ini:
         config[Ini.frame]['analysisType'] = str(Frame.analysisType)
         config[Ini.frame]['ratioX1'] = str(Frame.ratioX1)
         config[Ini.frame]['ratioX2'] = str(Frame.ratioX2)
+        config[Ini.frame]['whiteThreshold'] = str(Frame.whiteThreshold)
 
         Frame.s8_frameCrop.save(config)
         #Frame.s8_holeCrop.save(config)
