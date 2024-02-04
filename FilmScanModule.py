@@ -214,19 +214,28 @@ class Frame:
     hist_path = os.path.expanduser("~/my_cv2hist_lim.png")
     whiteThreshold = 225
     analysisType = 'auto'
+    edgeDetection = 'auto'
+    filmEdge = 200
     ratioX1 = 385
     ratioX2 = 564
+    threshX1 = 385
+    threshX2 = 564
 
     def initScaleFactor():
         Frame.ScaleFactor = Camera.ViewWidth/640.0 
               
     def getHoleCropWidth():
-        return Frame.ratioX2-Frame.ratioX1
+        #if Frame.analysisType=='auto' or Frame.analysisType=='thresh':
+        #    return Frame.threshX2-Frame.threshX1
+        #else:
+        #    print(f"Returning width {Frame.ratioX2-Frame.ratioX1} for holecrop")
+        #return Frame.ratioX2-Frame.ratioX1
         #if Frame.format == "s8":
         #    return 1*(Frame.s8_holeCrop.x2-Frame.s8_holeCrop.x1) #wider to capture vertical line also
         #else:
         #    return 1*(Frame.r8_holeCrop.x2-Frame.r8_holeCrop.x1) #wider to capture vertical line also
         #return self.holeCrop.x2 - Frame.holeCrop.x1
+        return 100
     
     def __init__(self, imagePathName=None,*,image=None):
         self.imagePathName = imagePathName
@@ -268,7 +277,7 @@ class Frame:
         self.cY = self.midy
         self.rX = self.cX + self.stdSprocketWidth
         self.lX = 300
-        self.filmEdge = 0
+        self.filmEdge = Frame.filmEdge
         self.sprocketSize = 0    
         self.histogram = None
         self.sprocketHeight = None
@@ -1085,54 +1094,29 @@ class Frame:
         #self.locateHoleResult = locateHoleResult
         return locateHoleResult
 
-
-
-
-#=========================================================================
-    def findSprocketLeft(self):
-        returnlX = self.lX
+    def findLeftEdge(self):
+        #returnlX = self.lX
+        filmPlateEdge = 0.12#TODO need adjusment method??
         filmEdge = self.filmEdge
         searchRange = self.stdSprocketWidth*1.2#450 #may need to adjust with image size
-        ratioThresh = 0.1 #may need to adjust with film format
+        #ratioThresh = 0.1 #may need to adjust with film format
         filmEdgeTrigger = 0.01
         #searchStart = int(self.holeCrop.x1-searchRange)
-        searchStart = int(0.12*self.dx)#int(0.05*self.dx) #to the right of left edge of films
-        searchStart =220 #TODO set frame edge should only be full black on film edge
+        searchStart = int(filmPlateEdge*self.dx)#int(0.05*self.dx) #to the right of left edge of films
+        #searchStart =self.lx-(0.1*self.dx) #TODO set frame edge should only be full black on film edge
         searchEnd = int(searchStart+searchRange)
-        hMin = 0
-        sMin = 0
-        vMin = 54
-        hMax = 179
-        sMax = 85
-        vMax = 255
-        lower = np.array([hMin, sMin, vMin])
-        upper = np.array([hMax, sMax, vMax])
-        hsv = cv2.cvtColor(self.image, cv2.COLOR_BGR2HSV)
-        self.threshrg = cv2.inRange(hsv, lower, upper) #TODO why am I using a different thresh??
 
+        #use HSV Range for edge detection
         hsvMargin=50
         image = cv2.cvtColor(self.image, cv2.COLOR_BGR2HSV)
         lower = np.array([0, 0, 255-hsvMargin], dtype="uint8")
         upper = np.array([255, hsvMargin, 255], dtype="uint8")
-        mask = cv2.inRange(image, lower, upper)
-        #self.threshrgmsk = cv2.bitwise_and(self.image, self.image, mask=mask)
-        self.threshrgmsk = mask
-
-        _, self.thresh = cv2.threshold(self.image, Frame.whiteThreshold, 255, 0)
-        cv2.imwrite(os.path.expanduser("~/convertfail.png"),self.thresh)
-        cv2.imwrite(os.path.expanduser("~/convertfailrg.png"),self.threshrg)
-        cv2.imwrite(os.path.expanduser("~/convertfailrgmsk.png"),self.threshrgmsk)
-        hsv = None
+        self.threshmsk = cv2.inRange(image, lower, upper)
+        cv2.imwrite(os.path.expanduser("~/threshmsk.png"),self.threshmsk)
         step = 1
         print(f"Finding left edge from {searchStart} to {searchEnd}")
         for x1 in range(searchStart,searchEnd,step):
-            #strip = self.thresh[:,int(x1):int(x1+step),] #TODO reduce y size
-            #print(self.thresh.shape)
-            #print(self.threshrg.shape)
-            
-            #strip = self.thresh[:,int(x1):int(x1+step),] #TODO reduce y size
-            strip = self.threshrgmsk[:,int(x1):int(x1+step),] #TODO reduce y size
-            
+            strip = self.threshmsk[:,int(x1):int(x1+step),] #TODO reduce y size
             ratio = float(np.sum(strip == 255)/(self.dy*step))
             print(f"x {x1} ratio {ratio} {np.sum(strip == 255)} dx {self.dx*step}")
             p1 = (int(x1), int(0)) 
@@ -1145,12 +1129,21 @@ class Frame:
                 p1 = (int(x1), int(0)) 
                 p2 = (int(x1), int(self.dy)) 
                 cv2.line(self.image, p1, p2, (255, 0, 0), 2) #Vert
-                break
+                return True
+        return False
+
+#=========================================================================
+    def findSprocketLeft(self):
+        foundLeftEdge = self.findLeftEdge()
+        returnlX = self.lX
+        filmEdge = self.filmEdge
+        searchRange = self.stdSprocketWidth*1.2#450 #may need to adjust with image size
+        ratioThresh = 0.1 #may need to adjust with film format
         step = int(5*self.ScaleFactor) #increase for faster
         searchStart = int(filmEdge+(0.015*self.dx))#buffer for rough edge
         searchEnd = int(searchStart+searchRange)
         for x1 in range(searchStart,searchEnd,step):
-            strip = self.threshrgmsk[:,int(x1):int(x1+step),]
+            strip = self.threshmsk[:,int(x1):int(x1+step),]
             ratio = float(np.sum(strip == 255)/(self.dy*step))
             print(f"Ratio calc result {ratio} white {np.sum(strip==255)} / steparea {self.dy*step}")
             #print(f"x {x1} ratio {ratio} {np.sum(strip == 255)} dx {self.dy*step}")
@@ -1158,7 +1151,7 @@ class Frame:
             p2 = (int(x1), int(self.dy)) 
             cv2.line(self.image, p1, p2, (255, 255, 255), 3) #Vert
             if ratio>ratioThresh and filmEdge:
-                cv2.imwrite(os.path.expanduser("~/testx.png"), self.image)
+                #cv2.imwrite(os.path.expanduser("~/testx.png"), self.image)
                 print(f"Final lX {x1} ratio {ratio}")
                 returnlX = x1+(step/2)
                 self.lX = returnlX
