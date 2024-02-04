@@ -132,7 +132,7 @@ def spoolStop():
     #spool_pwm.ChangeDutyCycle(0)
     
 def stepStop():
-    print("Stepper off")
+    print("Stepper off-----------------------------------------------------")
     GPIO.output(STEPON, GPIO.LOW)
 
 def stepHigh():
@@ -177,6 +177,7 @@ def stopScanner():
     GPIO.output(STEPON, GPIO.LOW)
 
 def startScanner():
+    print("Stepper on--------------------------------------")
     GPIO.output((18, 15, 14), (1, 1, 0))
     #GPIO.output(ledon, GPIO.HIGH)  # turn on LED
     setLedDc(100)
