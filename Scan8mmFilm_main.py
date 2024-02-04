@@ -366,25 +366,25 @@ class Window(QMainWindow, Ui_MainWindow):
         print(f"Setting white threshold to {Frame.whiteThreshold} from image")
 
     def x1Plus(self):
-        Frame.ratioX1+=10
+        Frame.ratioX1+=20
         self.lblX1.setText(str(Frame.ratioX1))
         self.refreshFrame()
         self.showAdjustValues()
 
     def x1Minus(self):
-        Frame.ratioX1-=10
+        Frame.ratioX1-=20
         self.lblX1.setText(str(Frame.ratioX1))
         self.refreshFrame()
         self.showAdjustValues()
                 
     def x2Plus(self):
-        Frame.ratioX2+=10
+        Frame.ratioX2+=20
         self.lblX2.setText(str(Frame.ratioX2))
         self.refreshFrame()
         self.showAdjustValues()
                 
     def x2Minus(self):
-        Frame.ratioX2-=10
+        Frame.ratioX2-=20
         self.lblX2.setText(str(Frame.ratioX2))
         self.refreshFrame()
         self.showAdjustValues()
