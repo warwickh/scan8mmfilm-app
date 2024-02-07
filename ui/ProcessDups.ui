@@ -144,6 +144,7 @@
            </property>
           </widget>
          </item>
+<<<<<<< HEAD
          <item>
           <widget class="QPushButton" name="pbtnDelete">
            <property name="text">
@@ -151,6 +152,8 @@
            </property>
           </widget>
          </item>
+=======
+>>>>>>> 5f3dffff76af9c4d7e7b6fb73631a1d85022b8ef
         </layout>
        </widget>
       </item>

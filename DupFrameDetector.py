@@ -5,10 +5,16 @@ import csv
 #import matplotlib.pyplot as plt
 #import matplotlib.image as mpimg
 #import matplotlib.animation as animation
+<<<<<<< HEAD
 import shutil
 from keras.applications.vgg16 import VGG16
 from sklearn.metrics.pairwise import cosine_similarity
 from skimage.metrics import structural_similarity
+=======
+
+from keras.applications.vgg16 import VGG16
+from sklearn.metrics.pairwise import cosine_similarity
+>>>>>>> 5f3dffff76af9c4d7e7b6fb73631a1d85022b8ef
 import os
 import glob
 import cv2
@@ -58,7 +64,10 @@ class DupFrameDetector:
     #    plt.show()
 
     def createDupLog(self, folder, force=False):
+<<<<<<< HEAD
         print("createDupLog")
+=======
+>>>>>>> 5f3dffff76af9c4d7e7b6fb73631a1d85022b8ef
         #roll = "roll6"
         #folder = os.path.expanduser(f"~/scanframes/crop/{roll}")
         os.chdir(folder)
@@ -73,10 +82,15 @@ class DupFrameDetector:
                     print(f"{fn}")
                     currentImage = os.path.join(folder,fn)
                     if lastImage:
+<<<<<<< HEAD
                         #similarity_score = self.get_similarity_score(lastImage, currentImage)
                         similarity_score = self.get_similarity_score_ssim(lastImage, currentImage)
                         similarity_score_pad = self.get_similarity_score_pad(lastImage, currentImage)
                         logFile.write(f"{lastImage},{currentImage},{similarity_score[0]} {similarity_score_pad[0]}\n")
+=======
+                        similarity_score = self.get_similarity_score(lastImage, currentImage)
+                        logFile.write(f"{lastImage},{currentImage},{similarity_score[0]} \n")
+>>>>>>> 5f3dffff76af9c4d7e7b6fb73631a1d85022b8ef
                         lastImage = currentImage
                         print(f"{lastImage} {currentImage} similarity score {similarity_score[0]}")
                     else:
@@ -90,6 +104,7 @@ class DupFrameDetector:
         #      for row in reader_obj: 
         #          print(row)
         #          show_seq(row[0],row[1])
+<<<<<<< HEAD
 
     def center_crop(self, img, cropAmt):
         width, height = img.shape[1], img.shape[0]
@@ -198,6 +213,9 @@ class DupFrameDetector:
                     
         
 
+=======
+    
+>>>>>>> 5f3dffff76af9c4d7e7b6fb73631a1d85022b8ef
     def getNextRow(self):
         #print(f"loaded {self.loaded}")
         if not self.loaded:
@@ -227,7 +245,11 @@ class DupFrameDetector:
             self.loaded = True
 
 if __name__ == "__main__":
+<<<<<<< HEAD
     roll = "roll4"
+=======
+    roll = "roll6"
+>>>>>>> 5f3dffff76af9c4d7e7b6fb73631a1d85022b8ef
     folder = os.path.expanduser(f"~/scanframes/crop/{roll}")
     myDetector = DupFrameDetector()
     myDetector.createDupLog(folder)
