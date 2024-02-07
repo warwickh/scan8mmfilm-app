@@ -93,7 +93,7 @@ class DupFrameDetector:
         diff = 255 - np.abs(cv2.add(ref_gray, -ex_gray_crop))
         (score, ssimdiff) = structural_similarity(ref_gray, ex_gray_crop, full=True)
         print("Image Similarity: {:.4f}%".format(score * 100))
-        cv2.imwrite(f'./out/{lbl}_ssimdiff.jpg', ssimdiff)
+        cv2.imwrite(f'./out/{lbl}_ssimdiff.png', ssimdiff)
         # compute mean of diff
         print(cv2.mean(diff))
         mean = cv2.mean(diff)[0]
@@ -104,13 +104,13 @@ class DupFrameDetector:
         th, threshed = cv2.threshold(diff, 20, 255, cv2.THRESH_BINARY|cv2.THRESH_OTSU)
         cnts = cv2.findContours(threshed, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)[-2]
         print(f"contours {len(cnts)}")
-        cv2.imwrite(f'./out/{lbl}_threshed.jpg', threshed)
-        cv2.imwrite(f'./out/{lbl}_example.jpg', ex)
-        cv2.imwrite(f'./out/{lbl}_reference_gray.jpg', ref_gray)
-        cv2.imwrite(f'./out/{lbl}_example_gray_padded.jpg', ex_gray)
-        cv2.imwrite(f'./out/{lbl}_reference_example_correlation.jpg', (255*corrimg).clip(0,255).astype(np.uint8))
-        cv2.imwrite(f'./out/{lbl}_example_gray_padded_cropped.jpg', ex_gray_crop)
-        cv2.imwrite(f'./out/{lbl}_diff.jpg', diff)
+        cv2.imwrite(f'./out/{lbl}_threshed.png', threshed)
+        cv2.imwrite(f'./out/{lbl}_example.png', ex)
+        cv2.imwrite(f'./out/{lbl}_reference_gray.png', ref_gray)
+        cv2.imwrite(f'./out/{lbl}_example_gray_padded.png', ex_gray)
+        cv2.imwrite(f'./out/{lbl}_reference_example_correlation.png', (255*corrimg).clip(0,255).astype(np.uint8))
+        cv2.imwrite(f'./out/{lbl}_example_gray_padded_cropped.png', ex_gray_crop)
+        cv2.imwrite(f'./out/{lbl}_diff.png', diff)
         return [float((100-mean)/100)]
       
     def center_crop(self, img, cropAmt):
@@ -121,8 +121,8 @@ class DupFrameDetector:
         cw2, ch2 = int(crop_width/2), int(crop_height/2) 
         crop_img = img[mid_y-ch2:mid_y+ch2, mid_x-cw2:mid_x+cw2]
         if cropAmt==400:
-            cv2.imwrite(f'./out/chkcrop1.jpg', img)
-            cv2.imwrite(f'./out/chkcrop2.jpg', crop_img)
+            cv2.imwrite(f'./out/chkcrop1.png', img)
+            cv2.imwrite(f'./out/chkcrop2.png', crop_img)
         return crop_img  
 
 if __name__ == "__main__":
