@@ -22,14 +22,14 @@ class Window(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setupUi(self)
-        self.currentLimit = 0.99
+        self.currentLimit = 0.94
         self.similarity=0
         self.currentImg = 1
         self.results = []
         self.img1pth = ""
         self.img2pth = ""
         self.detector = DupFrameDetector()
-        self.cropFolder = os.path.expanduser("~/scanframes/crop/roll3")
+        self.cropFolder = os.path.expanduser("~/scanframes/crop/roll4")
         self.resultPath = os.path.join(self.cropFolder,"dup_results.csv")
         self.connectSignalsSlots()
         self.doLblImagePrep = False
@@ -66,6 +66,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnDup.clicked.connect(self.dup)
         self.pbtnNotDup.clicked.connect(self.notDup)
         self.pbtnSkip.clicked.connect(self.skip)
+        self.pbtnDelete.clicked.connect(self.delete)
         self.dsbLimit.valueChanged.connect(self.limitChanged)
 
     def updateInfoPanel(self):
@@ -100,9 +101,19 @@ class Window(QMainWindow, Ui_MainWindow):
                 break
 
     def skip(self):
+        self.pbtnDup.setEnabled(False)
+        self.pbtnNotDup.setEnabled(False)
         self.getNextImages()
         self.loadImage(self.img1)
         self.updateInfoPanel()
+        self.pbtnDup.setEnabled(True)
+        self.pbtnNotDup.setEnabled(True)
+        
+
+    def delete(self):
+        self.pbtnDelete.setEnabled(False)
+        self.detector.deleteAll(self.cropFolder)
+        self.pbtnDelete.setEnabled(True)
 
     def swap(self):
         if self.currentImg==2:
@@ -116,20 +127,28 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def dup(self):
         result = {'img1':self.img1pth, 'img2':self.img2pth, 'similarity': self.similarity, 'isDup': True}
+        self.pbtnDup.setEnabled(False)
+        self.pbtnNotDup.setEnabled(False)
         self.results.append(result)
         self.saveRow(result)
         self.getNextImages()
         self.loadImage(self.img1)
         self.updateInfoPanel()
+        self.pbtnDup.setEnabled(True)
+        self.pbtnNotDup.setEnabled(True)
 
     def notDup(self):
         result = {'img1':self.img1pth, 'img2':self.img2pth, 'similarity': self.similarity, 'isDup': False}
+        self.pbtnDup.setEnabled(False)
+        self.pbtnNotDup.setEnabled(False)
         self.results.append(result)
         self.saveRow(result)
         self.getNextImages()
         self.loadImage(self.img1)
         self.updateInfoPanel()
-
+        self.pbtnDup.setEnabled(True)
+        self.pbtnNotDup.setEnabled(True)
+        
     def loadImage(self, img):
         self.prepLblImage()
         self.lblImage.setPixmap(self.getQPixmap(img,self.scrollAreaWidgetContents))
