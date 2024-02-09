@@ -79,12 +79,9 @@ class Ui_MainWindow(object):
         self.pbtnSkip = QtWidgets.QPushButton(self.gbButtons)
         self.pbtnSkip.setObjectName("pbtnSkip")
         self.horizontalLayout_3.addWidget(self.pbtnSkip)
-<<<<<<< HEAD
         self.pbtnDelete = QtWidgets.QPushButton(self.gbButtons)
         self.pbtnDelete.setObjectName("pbtnDelete")
         self.horizontalLayout_3.addWidget(self.pbtnDelete)
-=======
->>>>>>> 5f3dffff76af9c4d7e7b6fb73631a1d85022b8ef
         self.verticalLayout_2.addWidget(self.gbButtons)
         self.horizontalLayout.addLayout(self.verticalLayout_2)
         MainWindow.setCentralWidget(self.centralwidget)
@@ -112,8 +109,5 @@ class Ui_MainWindow(object):
         self.pbtnNotDup.setText(_translate("MainWindow", "Not Dup"))
         self.pbtnDup.setText(_translate("MainWindow", "Dup"))
         self.pbtnSkip.setText(_translate("MainWindow", "Skip"))
-<<<<<<< HEAD
         self.pbtnDelete.setText(_translate("MainWindow", "DeleteAll"))
-=======
->>>>>>> 5f3dffff76af9c4d7e7b6fb73631a1d85022b8ef
         self.toolBar.setWindowTitle(_translate("MainWindow", "toolBar"))

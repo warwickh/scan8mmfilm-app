@@ -22,22 +22,16 @@ class Window(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setupUi(self)
-<<<<<<< HEAD
-        self.currentLimit = 0.94
-=======
         self.currentLimit = 0.99
->>>>>>> 5f3dffff76af9c4d7e7b6fb73631a1d85022b8ef
+        #self.currentLimit = 0.077
+        self.resultType = 'similarity2'
         self.similarity=0
         self.currentImg = 1
         self.results = []
         self.img1pth = ""
         self.img2pth = ""
         self.detector = DupFrameDetector()
-<<<<<<< HEAD
         self.cropFolder = os.path.expanduser("~/scanframes/crop/roll4")
-=======
-        self.cropFolder = os.path.expanduser("~/scanframes/crop/roll3")
->>>>>>> 5f3dffff76af9c4d7e7b6fb73631a1d85022b8ef
         self.resultPath = os.path.join(self.cropFolder,"dup_results.csv")
         self.connectSignalsSlots()
         self.doLblImagePrep = False
@@ -74,10 +68,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnDup.clicked.connect(self.dup)
         self.pbtnNotDup.clicked.connect(self.notDup)
         self.pbtnSkip.clicked.connect(self.skip)
-<<<<<<< HEAD
         self.pbtnDelete.clicked.connect(self.delete)
-=======
->>>>>>> 5f3dffff76af9c4d7e7b6fb73631a1d85022b8ef
         self.dsbLimit.valueChanged.connect(self.limitChanged)
 
     def updateInfoPanel(self):
@@ -105,14 +96,13 @@ class Window(QMainWindow, Ui_MainWindow):
             self.img2pth = self.currentRow['img2']
             self.img1 = self.getCVImage(self.img1pth)
             self.img2 = self.getCVImage(self.img2pth)
-            self.similarity = float(self.currentRow['similarity'])
+            self.similarity = float(self.currentRow[self.resultType])/100#TODO
             self.updateInfoPanel()
-            print(f"{self.img1pth} {self.img2pth} {self.similarity}")
+            print(f"{self.img1pth} {self.img2pth} {self.similarity} {self.currentRow['similarity1']}")
             if self.similarity>=self.currentLimit:
                 break
 
     def skip(self):
-<<<<<<< HEAD
         self.pbtnDup.setEnabled(False)
         self.pbtnNotDup.setEnabled(False)
         self.getNextImages()
@@ -126,11 +116,6 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnDelete.setEnabled(False)
         self.detector.deleteAll(self.cropFolder)
         self.pbtnDelete.setEnabled(True)
-=======
-        self.getNextImages()
-        self.loadImage(self.img1)
-        self.updateInfoPanel()
->>>>>>> 5f3dffff76af9c4d7e7b6fb73631a1d85022b8ef
 
     def swap(self):
         if self.currentImg==2:
@@ -144,17 +129,13 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def dup(self):
         result = {'img1':self.img1pth, 'img2':self.img2pth, 'similarity': self.similarity, 'isDup': True}
-<<<<<<< HEAD
         self.pbtnDup.setEnabled(False)
         self.pbtnNotDup.setEnabled(False)
-=======
->>>>>>> 5f3dffff76af9c4d7e7b6fb73631a1d85022b8ef
         self.results.append(result)
         self.saveRow(result)
         self.getNextImages()
         self.loadImage(self.img1)
         self.updateInfoPanel()
-<<<<<<< HEAD
         self.pbtnDup.setEnabled(True)
         self.pbtnNotDup.setEnabled(True)
 
@@ -162,23 +143,19 @@ class Window(QMainWindow, Ui_MainWindow):
         result = {'img1':self.img1pth, 'img2':self.img2pth, 'similarity': self.similarity, 'isDup': False}
         self.pbtnDup.setEnabled(False)
         self.pbtnNotDup.setEnabled(False)
-=======
 
     def notDup(self):
         result = {'img1':self.img1pth, 'img2':self.img2pth, 'similarity': self.similarity, 'isDup': False}
->>>>>>> 5f3dffff76af9c4d7e7b6fb73631a1d85022b8ef
+        self.pbtnDup.setEnabled(False)
+        self.pbtnNotDup.setEnabled(False)
         self.results.append(result)
         self.saveRow(result)
         self.getNextImages()
         self.loadImage(self.img1)
         self.updateInfoPanel()
-<<<<<<< HEAD
         self.pbtnDup.setEnabled(True)
         self.pbtnNotDup.setEnabled(True)
         
-=======
-
->>>>>>> 5f3dffff76af9c4d7e7b6fb73631a1d85022b8ef
     def loadImage(self, img):
         self.prepLblImage()
         self.lblImage.setPixmap(self.getQPixmap(img,self.scrollAreaWidgetContents))

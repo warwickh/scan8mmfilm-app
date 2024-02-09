@@ -35,6 +35,54 @@ class DupFrameDetector:
                             lastImage = currentImage
             #self.getData()
 
+    def padLocateCrop(self, img1pth, img2pth, cropBoth=True):
+        lbl = "pad"
+        ref = cv2.imread(img1pth)
+        dy, dx , _= ref.shape
+        ref_gray = cv2.cvtColor(self.center_crop(ref,300), cv2.COLOR_BGR2GRAY)
+        hr, wr = ref_gray.shape
+        ex = cv2.imread(img2pth)
+        ex_gray = cv2.cvtColor(self.center_crop(ex,300), cv2.COLOR_BGR2GRAY)
+        he, we = ex_gray.shape
+        color=(128,128,128)
+        wp = we // 2
+        hp = he // 2
+        ex_gray = cv2.copyMakeBorder(ex_gray, hp,hp,wp,wp, cv2.BORDER_CONSTANT, value=color)
+        corrimg = cv2.matchTemplate(ref_gray,ex_gray,cv2.TM_CCOEFF_NORMED)
+        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(corrimg)
+        max_val_corr = '{:.3f}'.format(max_val)
+        print("correlation: " + max_val_corr)
+        xx, yy = max_loc
+        print(f'x_match_loc = {xx} x_border {wp} y_match_loc = {yy} y_border {hp}')
+        print(f"Is my movement amount {wp} - {xx} = {wp-xx} and {hp} - {yy} = {hp-yy} ??")
+        x_shift = wp-xx
+        y_shift = hp-yy
+        pad_top = max(0,y_shift)
+        pad_bottom = abs(min(0,y_shift))
+        pad_left = max(0,x_shift)
+        pad_right = abs(min(0,x_shift))
+        print(f"x {x_shift} y {y_shift} top {pad_top} bottom {pad_bottom} left {pad_left} right {pad_right}")
+        if cropBoth:
+            adjusted_ex = ex[pad_bottom:dy-(2*pad_top)-pad_bottom, pad_right:dx-(2*pad_left)-pad_right]
+            adjusted_ref = ref[pad_top:dy-pad_top-(2*pad_bottom), pad_left:dx-pad_left-(2*pad_right)]
+            #cv2.imwrite(f'./out/{lbl}_adjusted_ref.png', adjusted_ref)
+            cv2.imwrite(f'./tmp1.png', ref)
+            cv2.imwrite(f'./tmp2.png', ex)
+            #(score_col, ssimdiff_col) = structural_similarity(ref, ex, full=True)
+            #8print("Image Similarity Colour: {:.4f}%".format(score_col * 100))
+            return './tmp1.png', './tmp2.png'
+        else:
+            padded_ex = cv2.copyMakeBorder(ex, pad_top, pad_bottom, pad_left, pad_right, cv2.BORDER_CONSTANT, value=color)
+            adjusted_ex = padded_ex[0:dy, 0:dx]
+        #(score_grey, ssimdiff_grey) = structural_similarity(ref_gray, ex_gray_crop, full=True)
+        
+        #print("Image Similarity Grey: {:.4f}%".format(score_grey * 100))
+        
+        #cv2.imwrite(f'./out/{lbl}_ref.png', ref)
+        #cv2.imwrite(f'./out/{lbl}_ex.png', ex)
+        #cv2.imwrite(f'./out/{lbl}_adjusted_ex.png', adjusted_ex)
+        
+
     def get_similarity_score_greyssim(self, first_image : str, second_image : str):
         lbl = os.path.basename(second_image).split(".")[0]
         ref = self.center_crop(cv2.imread(first_image),300)
@@ -129,4 +177,7 @@ if __name__ == "__main__":
     roll = "roll4"
     folder = os.path.expanduser(f"~/scanframes/crop/{roll}")
     myDetector = DupFrameDetector()
-    myDetector.createDupLog(folder)
+    #myDetector.createDupLog(folder)
+    #myDetector.padLocateCrop("/home/warwickh/scanframes/crop/roll4/frame003607.jpg","/home/warwickh/scanframes/crop/roll4/frame003608.jpg")
+    myDetector.padLocateCrop("/home/warwickh/scanframes/crop/roll4/frame003508.jpg","/home/warwickh/scanframes/crop/roll4/frame003509.jpg")
+    myDetector.get_similarity_score_grey("/home/warwickh/scanframes/crop/roll4/frame003508.jpg","/home/warwickh/scanframes/crop/roll4/frame003509.jpg")

@@ -5,16 +5,10 @@ import csv
 #import matplotlib.pyplot as plt
 #import matplotlib.image as mpimg
 #import matplotlib.animation as animation
-<<<<<<< HEAD
 import shutil
 from keras.applications.vgg16 import VGG16
 from sklearn.metrics.pairwise import cosine_similarity
 from skimage.metrics import structural_similarity
-=======
-
-from keras.applications.vgg16 import VGG16
-from sklearn.metrics.pairwise import cosine_similarity
->>>>>>> 5f3dffff76af9c4d7e7b6fb73631a1d85022b8ef
 import os
 import glob
 import cv2
@@ -63,11 +57,51 @@ class DupFrameDetector:
     #    ani = animation.ArtistAnimation(fig, ims, interval=50, blit=True,repeat_delay=0)
     #    plt.show()
 
+    def padLocateCrop(self, img1pth, img2pth, cropBoth=True):
+        lbl = "pad"
+        ref = cv2.imread(img1pth)
+        dy, dx , _= ref.shape
+        ref_gray = cv2.cvtColor(self.center_crop(ref,300), cv2.COLOR_BGR2GRAY)
+        hr, wr = ref_gray.shape
+        ex = cv2.imread(img2pth)
+        ex_gray = cv2.cvtColor(self.center_crop(ex,300), cv2.COLOR_BGR2GRAY)
+        he, we = ex_gray.shape
+        color=(128,128,128)
+        wp = we // 2
+        hp = he // 2
+        ex_gray = cv2.copyMakeBorder(ex_gray, hp,hp,wp,wp, cv2.BORDER_CONSTANT, value=color)
+        corrimg = cv2.matchTemplate(ref_gray,ex_gray,cv2.TM_CCOEFF_NORMED)
+        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(corrimg)
+        max_val_corr = '{:.3f}'.format(max_val)
+        print("correlation: " + max_val_corr)
+        xx, yy = max_loc
+        print(f'x_match_loc = {xx} x_border {wp} y_match_loc = {yy} y_border {hp}')
+        print(f"Is my movement amount {wp} - {xx} = {wp-xx} and {hp} - {yy} = {hp-yy} ??")
+        x_shift = wp-xx
+        y_shift = hp-yy
+        pad_top = max(0,y_shift)
+        pad_bottom = abs(min(0,y_shift))
+        pad_left = max(0,x_shift)
+        pad_right = abs(min(0,x_shift))
+        print(f"x {x_shift} y {y_shift} top {pad_top} bottom {pad_bottom} left {pad_left} right {pad_right}")
+        if cropBoth:
+            adjusted_ex = ex[pad_bottom:dy-(2*pad_top)-pad_bottom, pad_right:dx-(2*pad_left)-pad_right]
+            adjusted_ref = ref[pad_top:dy-pad_top-(2*pad_bottom), pad_left:dx-pad_left-(2*pad_right)]
+            #cv2.imwrite(f'./out/{lbl}_adjusted_ref.png', adjusted_ref)
+            cv2.imwrite(f'./tmp1.png', ref)
+            cv2.imwrite(f'./tmp2.png', ex)
+            return './tmp1.png', './tmp2.png'
+        else:
+            padded_ex = cv2.copyMakeBorder(ex, pad_top, pad_bottom, pad_left, pad_right, cv2.BORDER_CONSTANT, value=color)
+            adjusted_ex = padded_ex[0:dy, 0:dx]
+            cv2.imwrite(f'./tmp2.png', ex)
+            return img1pth, './tmp2.png'
+        #cv2.imwrite(f'./out/{lbl}_ref.png', ref)
+        #cv2.imwrite(f'./out/{lbl}_ex.png', ex)
+        #cv2.imwrite(f'./out/{lbl}_adjusted_ex.png', adjusted_ex)
+            
     def createDupLog(self, folder, force=False):
-<<<<<<< HEAD
         print("createDupLog")
-=======
->>>>>>> 5f3dffff76af9c4d7e7b6fb73631a1d85022b8ef
         #roll = "roll6"
         #folder = os.path.expanduser(f"~/scanframes/crop/{roll}")
         os.chdir(folder)
@@ -82,15 +116,12 @@ class DupFrameDetector:
                     print(f"{fn}")
                     currentImage = os.path.join(folder,fn)
                     if lastImage:
-<<<<<<< HEAD
                         #similarity_score = self.get_similarity_score(lastImage, currentImage)
                         similarity_score = self.get_similarity_score_ssim(lastImage, currentImage)
-                        similarity_score_pad = self.get_similarity_score_pad(lastImage, currentImage)
-                        logFile.write(f"{lastImage},{currentImage},{similarity_score[0]} {similarity_score_pad[0]}\n")
-=======
-                        similarity_score = self.get_similarity_score(lastImage, currentImage)
-                        logFile.write(f"{lastImage},{currentImage},{similarity_score[0]} \n")
->>>>>>> 5f3dffff76af9c4d7e7b6fb73631a1d85022b8ef
+                        similarity_score_padgrey = self.get_similarity_score_pad(lastImage, currentImage)
+                        pad_image_ref, pad_image_ex  = self.padLocateCrop(lastImage, currentImage)
+                        similarity_score_pad = self.get_similarity_score_ssim(pad_image_ref, pad_image_ex)
+                        logFile.write(f"{lastImage},{currentImage},{similarity_score[0]},{similarity_score_pad[0]},{similarity_score_padgrey[0]}\n")
                         lastImage = currentImage
                         print(f"{lastImage} {currentImage} similarity score {similarity_score[0]}")
                     else:
@@ -104,7 +135,6 @@ class DupFrameDetector:
         #      for row in reader_obj: 
         #          print(row)
         #          show_seq(row[0],row[1])
-<<<<<<< HEAD
 
     def center_crop(self, img, cropAmt):
         width, height = img.shape[1], img.shape[0]
@@ -210,18 +240,16 @@ class DupFrameDetector:
                             shutil.move(img2pth,os.path.join(archFolder,os.path.basename(img2pth)))
                         else:
                             print(f"isDup {isDup} so not deleting {img2pth}")
-                    
-        
 
-=======
-    
->>>>>>> 5f3dffff76af9c4d7e7b6fb73631a1d85022b8ef
     def getNextRow(self):
         #print(f"loaded {self.loaded}")
         if not self.loaded:
             print("Not loaded")
             return None
-        return next(self.logIterator)
+        try:
+            return next(self.logIterator)
+        except:
+            return None
     
     def getNextImages(self):
         row = self.getNextRow()
@@ -239,17 +267,14 @@ class DupFrameDetector:
             self.loaded = False
         else:
             with open(self.logPath,'r') as logFile:
-                dict_reader = csv.DictReader(logFile,fieldnames=['img1','img2','similarity'])
+                headers = ['img1','img2','similarity1','similarity2','similarity3','similarity4']
+                dict_reader = csv.DictReader(logFile,fieldnames=headers)
                 self.logData = list(dict_reader)
             self.logIterator = iter(self.logData)
             self.loaded = True
 
 if __name__ == "__main__":
-<<<<<<< HEAD
     roll = "roll4"
-=======
-    roll = "roll6"
->>>>>>> 5f3dffff76af9c4d7e7b6fb73631a1d85022b8ef
     folder = os.path.expanduser(f"~/scanframes/crop/{roll}")
     myDetector = DupFrameDetector()
     myDetector.createDupLog(folder)
