@@ -89,10 +89,11 @@ class Window(QMainWindow, Ui_MainWindow):
         #self.pbtnLedPlus.clicked.connect(self.ledPlus)
         #self.pbtnLedMinus.clicked.connect(self.ledMinus)
         self.pbtnSetWT.clicked.connect(self.setWT)
+        self.pbtnChkWT.clicked.connect(self.whiteThresholdChanged)
         self.pbtnSpool.clicked.connect(self.spool)
         self.dsbOuter.valueChanged.connect(self.outerThreshChanged)
         self.dsbInner.valueChanged.connect(self.innerThreshChanged)
-        self.sbWT.valueChanged.connect(self.whiteThresholdChanged)
+        #self.sbWT.valueChanged.connect(self.whiteThresholdChanged)
         self.pbtnX1Minus.clicked.connect(self.x1Minus)
         self.pbtnX1Plus.clicked.connect(self.x1Plus)
         self.pbtnX2Minus.clicked.connect(self.x2Minus)
@@ -408,13 +409,16 @@ class Window(QMainWindow, Ui_MainWindow):
         #image = cv2.resize(image, (640, 480))
         self.frame = Frame(image=image)
         self.frame.calcCrop()
+        print("in capture_done")
         self.lblHoleCrop.setPixmap(self.frame.getHoleCrop())
         #self.lblHist.setPixmap(cv2.resize(self.frame.getHistogram(), (0,0), fx=0.5, fy=0.5))
-        self.lblHist.setPixmap(self.frame.getHistogram())
+        #self.lblHist.setPixmap(self.frame.getHistogram())
         self.updateInfoPanel()
-        self.motorTicks = 0   
+        self.motorTicks = 0
+        print("only the buttons to go")   
         if self.scanDone :
             self.enableButtons(busy=False)
+        print("capture_done finished")
             
     def scanProgress(self, info, i, frame ):
         self.lblScanInfo.setText(info)
@@ -508,7 +512,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnX2Plus.setEnabled(frame)
         self.dsbOuter.setEnabled(frame)
         self.dsbInner.setEnabled(frame)
-        self.sbWT.setEnabled(idle and crop and frame)
+        self.sbWT.setEnabled(frame)
         #self.pbtnLedPlus.setEnabled(scan)
         #self.pbtnLedMinus.setEnabled(scan)
         self.pbtnSetWT.setEnabled(idle and crop and frame)
@@ -743,6 +747,7 @@ class QThreadScan(QtCore.QThread):
         stuckCount = 0
         release = True
         pidevi.spool()
+        firstAdj = True
         while self.cmd == 1 :
             try:
                 #pidevi.spoolStart()
@@ -783,18 +788,24 @@ class QThreadScan(QtCore.QThread):
                     pidevi.stepCw(tolstep)
                     sleep(.2)  
                     oldY = currentcY
+                    firstAdj = False
 
                 elif currentcY < self.midy - tolerance:
-                    self.sigProgress.emit(f"{self.frameNo} adjusting down", self.frameNo, self.frame)  
-                    print(f"{currentcY} higher than {self.midy} so Moving down {abs(currentcY-self.midy)} pixels {tolstep} steps")
-                    #self.motorStart()
-                    if release:
-                        pidevi.spoolBack(0.05)
-                        release = False
-                    #pidevi.adjDn()  
-                    pidevi.stepCcw(tolstep)
-                    sleep(.2) 
-                    oldY = currentcY 
+                    if firstAdj and currentcY < self.midy - 3*tolerance:
+                        pidevi.stepCw(40)
+                    else:
+                        self.sigProgress.emit(f"{self.frameNo} adjusting down", self.frameNo, self.frame)  
+                        print(f"{currentcY} higher than {self.midy} so Moving down {abs(currentcY-self.midy)} pixels {tolstep} steps")
+                        #self.motorStart()
+                        if release:
+                            pidevi.spoolBack(0.05)
+                            release = False
+                        #pidevi.adjDn()  
+                        pidevi.stepCcw(tolstep)
+                        sleep(.2) 
+                        oldY = currentcY 
+                    firstAdj = False
+        
                     
                 elif (currentcY <= self.midy + tolerance) and (currentcY >= self.midy - tolerance):
                     self.saveFrame() 
@@ -806,6 +817,7 @@ class QThreadScan(QtCore.QThread):
                     self.frameNo += 1
                     adjustedY = 0
                     stuckCount = 0
+                    firstAdj = True
 
                 sleep(0.1)  
                   
