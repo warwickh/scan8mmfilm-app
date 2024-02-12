@@ -353,6 +353,11 @@ class Window(QMainWindow, Ui_MainWindow):
         self.refreshFrame()
         self.showAdjustValues()
 
+    def whiteThresholdDetect(self):
+        Frame.whiteThreshold = self.frame.getWhiteThreshold()
+        self.sbWT.setValue(int(Frame.whiteThreshold))
+        print(f"Setting white threshold to {Frame.whiteThreshold} from image")
+
     def whiteThresholdApply(self):
         Frame.whiteThreshold = self.sbWT.value()
         self.refreshFrame()
@@ -384,11 +389,6 @@ class Window(QMainWindow, Ui_MainWindow):
     #        if picamera2_present:
     #            Film.led_dc = pidevi.ledMinus()
     #            print(f"LED DC now {Film.led_dc}")
-
-    def whiteThresholdDetect(self):
-        Frame.whiteThreshold = self.frame.getWhiteThreshold()
-        self.sbWT.setValue(int(Frame.whiteThreshold))
-        print(f"Setting white threshold to {Frame.whiteThreshold} from image")
 
     def x1Plus(self):
         Frame.ratioX1+=20
@@ -542,7 +542,9 @@ class Window(QMainWindow, Ui_MainWindow):
         self.sbWT.setEnabled(frame)
         #self.pbtnLedPlus.setEnabled(scan)
         #self.pbtnLedMinus.setEnabled(scan)
-        self.pbtnSetWT.setEnabled(idle and crop and frame)
+        self.pbtnApplyWT.setEnabled(frame)
+        self.pbtnDetectWT.setEnabled(frame)
+        #self.pbtnSetWT.setEnabled(idle and crop and frame)
         self.pbtnSpool.setEnabled(pi and (crop or scan))
 
     # Shared GUI update methods ---------------------------------------------------------------------------------------------------------------------------     
@@ -871,7 +873,7 @@ class QThreadScan(QtCore.QThread):
 # =============================================================================
 
 if __name__ == "__main__":
-    safe = True#False
+    safe = False
     if safe:
         try:
             app = QApplication(sys.argv) 
@@ -887,8 +889,8 @@ if __name__ == "__main__":
         app = QApplication(sys.argv) 
         win = Window()
         win.show()
-        #sys.exit(app.exec())
-        #if  picamera2_present:
-        #        pidevi.cleanup()
+        sys.exit(app.exec())
+        if  picamera2_present:
+                pidevi.cleanup()
     Ini.saveConfig()
     sys.exit(0)
