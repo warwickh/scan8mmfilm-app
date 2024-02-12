@@ -364,7 +364,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.showAdjustValues()
 
     def hsvMarginChanged(self):
-        Frame.hsvMargin = self.sbHsvMargin()
+        Frame.hsvMargin = self.sbHsvMargin.value()
         self.refreshFrame()
         self.showAdjustValues()
 
