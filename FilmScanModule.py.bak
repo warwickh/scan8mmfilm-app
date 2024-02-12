@@ -638,13 +638,12 @@ class Frame:
                         for peak in peaks:#List of peaks discovered at this level
                             plt.plot(self.smoothedHisto)
                             plt.axhline(z, color='blue', linewidth=1)
-                            testPeaks = [ \
-                             peak+self.stdSprocketHeight #start to end sprocket
-                            ,peak-self.stdSprocketHeight #end to start sprocket
-                            ,peak+self.stdSprocketHeight*self.ratio*1.02 #end to next start
-                            ,peak-self.stdSprocketHeight*self.ratio*1.02 #start to previous end
-                            ,peak+self.stdSprocketHeight*self.ratio*1.02+self.stdSprocketHeight #full start to start, end to end
-                            ,peak-self.stdSprocketHeight*self.ratio*1.02-self.stdSprocketHeight]
+                            testPeaks = [peak+self.stdSprocketHeight
+                                ,peak-self.stdSprocketHeight
+                                ,peak+self.stdSprocketHeight*self.ratio
+                                ,peak-self.stdSprocketHeight*self.ratio
+                                ,peak+self.stdSprocketHeight+(self.stdSprocketHeight*self.ratio*1.02)
+                                ,peak-self.stdSprocketHeight-(self.stdSprocketHeight*self.ratio*1.02)]
                             #print(f"testpeaks {testPeaks}")
                             valueSet = [peak]
                             sprocketStart = None
@@ -667,13 +666,16 @@ class Frame:
                                             sprocketStart = peak
                                             sprocketEnd = testPeaks[0]
                                         elif i==1:
+                                            #print(f"i is 1 so the peak before {peak} should be the sprocketstart")
                                             print(f"i is 1 so the peak before {peak} should be the sprocketstart")
                                             #print(f"try {peaks[peaks.index(peak)-1]}")
                                             #sprocketStart = peaks[peaks.index(peak)-1]
                                             sprocketStart = loc
                                             sprocketEnd = peak
-                                        elif i in [4,5]:
-                                            print(f"Full cycle so use only first or last, this is {peaks.index(peak)} for {len(peaks)} peaks from {peaks}")
+                                        elif i==4:
+                                            print(f"i is 4 so testpeak1 {testPeaks[1]} should be the sprocketstart")
+                                            sprocketStart = testPeaks[1]
+                                            sprocketEnd = peak
                                         plt.axvline(loc, color='green', linewidth=1,label=f"yes")
                                         valueSet.append(loc)
                                     else:
@@ -996,6 +998,128 @@ class Frame:
         cv2.line(self.imageHoleCrop, p1, p2, (0, 0, 255), 3) #Horiz
         p1 = (int(self.rX-x1), 0) 
         p2 = (int(self.rX-x1), self.dy) 
+        print(f"Vertical line points {p1} {p2}")
+        cv2.line(self.imageHoleCrop, p1, p2, (0, 0, 255), 3) #Vert
+        #cv2.line(self.image, p1, p2, (0, 0, 255), 3) #Vert
+        # show target midy
+        p1 = (0, int(midy)) 
+        p2 = (int(self.rX-x1), int(midy))
+        print(f"MidY line points {p1} {p2}")
+        cv2.line(self.imageHoleCrop, p1, p2, (0, 0, 0), 3)  # black line
+        p1 = (0, int(midy+3))
+        p2 = (int(self.rX-x1), int(midy+3))
+        cv2.line(self.imageHoleCrop, p1, p2, (255, 255, 255), 3) # white line
+        
+        #self.imageHoleCrop = cv2.resize(self.imageHoleCrop, (0,0), fx=1/self.ScaleFactor, fy=1/self.ScaleFactor)
+
+
+        cv2.imwrite(os.path.expanduser("~/ratiosprocketStrip.png"), self.imageHoleCrop)
+        #cv2.imwrite(self.resultImagePath, self.imageHoleCrop)
+        cv2.imwrite(os.path.expanduser("~/ratioimage.png"), self.image)
+        #if locatedX:
+        #    cv2.imwrite(os.path.expanduser("~/horizontalStrip.png"), horizontalStrip)  
+        #self.locateHoleResult = locateHoleResult
+        return locateHoleResult
+
+
+    def locateSprocketHoleRatioOld(self):
+        # Based on https://github.com/cpixip/sprocket_detection
+        print(f"locateSprocketHole {self.image.shape} {self.imagePathName}")
+        filterSize = 25                 # smoothing kernel - leave it untouched
+        midy = self.midy
+        self.peaks = []
+        self.smoothedHisto = []
+        #Find the left edge of sprocket
+        #x1,x2 = self.findXRange()
+        lX = self.findSprocketLeft()
+        x1 = int(lX+(0.01*self.dx))#buffer for rough edge
+        if not x1:
+            cv2.imwrite(os.path.expanduser("~/ratioa.png"), self.image)
+            cv2.imwrite(os.path.expanduser("~/ratiothresh.png"), self.thresh)
+            locateHoleResult = 5 #can't find left edge
+            print(f"Setting result to 5 - can't find left edge {self.imagePathName}")
+            raise Exception(f"Setting result to 5 - can't find left edge {self.imagePathName}")
+        else:
+            x2 = x1+int(self.stdSprocketWidth*0.8)
+            self.imageHoleCrop = self.image[:,int(x1):int(x1+2*(x2-x1)),:]
+            self.imageHoleCropHide = self.image[:,int(x1):int(x2),:]
+
+            #Create mask for white - may need to adjust
+            hsvMargin=50
+            image = cv2.cvtColor(self.imageHoleCropHide, cv2.COLOR_BGR2HSV)
+            lower = np.array([0, 0, 255-hsvMargin], dtype="uint8")
+            upper = np.array([255, hsvMargin, 255], dtype="uint8")
+            mask = cv2.inRange(image, lower, upper)
+            masked = cv2.bitwise_and(self.imageHoleCropHide, self.imageHoleCropHide, mask=mask)
+            cv2.imwrite(os.path.expanduser("~/whitemsk.png"), mask)
+            cv2.imwrite(os.path.expanduser("~/masked.png"), masked)
+
+
+            cv2.imwrite(os.path.expanduser("~/imageHoleCropHide.png"), self.imageHoleCropHide)
+
+            #sprocketEdges = np.absolute(cv2.Sobel(self.imageHoleCropHide,cv2.CV_64F,0,1,ksize=3))
+            sprocketEdges = np.absolute(cv2.Sobel(mask,cv2.CV_64F,0,1,ksize=3))
+
+            #histogram     = np.mean(sprocketEdges,axis=(1,2))
+            histogram     = np.mean(sprocketEdges,axis=(1))
+            
+            self.smoothedHisto = cv2.GaussianBlur(histogram,(1,filterSize),0)
+        #Frame.ratioX1 = x1
+        #Frame.ratioX2 = x2
+        if not Frame.edgeAuto:
+            self.holeCrop.x1 = x1
+            self.holeCrop.x2 = x2
+        #Find the y search range
+        #sprocketStart, sprocketSize = self.findSprocket(x1,x2)
+        #raise Exception(f"Stopping here")
+        y1, y2 = self.findYRange(x1,x2)
+        if not y1 and y2:
+            locateHoleResult = 4 #Cant find sprocket/gap pattern
+            print("Setting result to 4 - can't match pattern")
+        #Locate sprocket in reduced range
+        else:
+            print(f"Searching for sprocket x1 {x1} x2 {x2} y1 {y1} y2 {y2}")
+            cY, self.sprocketHeight = self.findSprocketSize(y1, y2)
+            if self.minSprocketHeight<self.sprocketHeight and self.sprocketHeight<self.maxSprocketHeight:
+                print(f"Valid sprocket size {self.sprocketHeight}")
+                locateHoleResult = 0 #Sprocket size within range
+            elif self.sprocketHeight>self.maxSprocketHeight:
+                print(f"Invalid sprocket size too big {self.sprocketHeight}")
+                locateHoleResult = 2 #Sprocket size too big
+                print("Setting result to 2 - sprocket size too big")
+            else:
+                print(f"probably not enough peaks found {len(self.peaks)}")
+                self.sprocketHeight   = 0
+                locateHoleResult = 1
+        rX = self.findSprocketRight(x1, x2, self.sprocketHeight, cY)
+        oldcX = self.cX
+        oldcY = self.cY
+        oldrX = self.rX
+        if not rX:
+            locateHoleResult = 3 #Right edge not detected
+            print("Setting result to 3 - right edge not detected")
+            #raise Exception(f"Setting result to 3 - can't find right edge {self.imagePathName}")
+            return locateHoleResult
+        else:
+
+            self.cX = int(lX+rX/2)
+            self.cY = cY
+            self.rX = rX
+
+        #locateHoleResult = 0
+        #print(f"InnerLow {innerLow} InnerHigh {innerHigh} cY {cY} rX {rX}")
+        #print(f"Found sprocket edge {locatedX} at {rX}")
+        print("cY=", self.cY, "oldcY=", oldcY, "locateHoleResult=", locateHoleResult)
+        p1 = (int(x2-x1), 0) 
+        p2 = (int(x2-x1), self.dy-1) 
+        print(f"Vertical line points {p1} {p2}")
+        cv2.line(self.imageHoleCrop, p1, p2, (255, 0, 0), 3) #View X1 Blue
+        p1 = (0, int(self.cY))
+        p2 = (int(self.rX-x1), int(self.cY))
+        print(f"Horizontal line points {p1} {p2}")
+        cv2.line(self.imageHoleCrop, p1, p2, (0, 0, 255), 3) #Horiz
+        p1 = (int(self.rX-x1), int(y1)) 
+        p2 = (int(self.rX-x1), int(y2)) 
         print(f"Vertical line points {p1} {p2}")
         cv2.line(self.imageHoleCrop, p1, p2, (0, 0, 255), 3) #Vert
         #cv2.line(self.image, p1, p2, (0, 0, 255), 3) #Vert
