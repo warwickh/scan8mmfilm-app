@@ -219,7 +219,7 @@ class Frame:
     analysisType = 'auto'
     edgeDetection = 'auto'
     filmEdge = 200
-    hsvMargin = 55
+    hsvMargin = 70
     #ratioX1 = 385
     #ratioX2 = 564
     edgeAuto = True
@@ -933,6 +933,7 @@ class Frame:
         image = cv2.cvtColor(self.imageHoleCropHide, cv2.COLOR_BGR2HSV)
         lower = np.array([0, 0, 255-Frame.hsvMargin], dtype="uint8")
         upper = np.array([255, Frame.hsvMargin, 255], dtype="uint8")
+        print(f"hsv lower {lower} upper {upper}")
         mask = cv2.inRange(image, lower, upper)
         masked = cv2.bitwise_and(self.imageHoleCropHide, self.imageHoleCropHide, mask=mask)
         cv2.imwrite(os.path.expanduser("~/whitemsk.png"), mask)
@@ -1154,10 +1155,10 @@ class Frame:
         searchEnd = int(searchStart+searchRange)
 
         #use HSV Range for edge detection
-        hsvMargin=55
+        #hsvMargin=55
         image = cv2.cvtColor(self.image, cv2.COLOR_BGR2HSV)
-        lower = np.array([0, 0, 255-hsvMargin], dtype="uint8")
-        upper = np.array([255, hsvMargin, 255], dtype="uint8")
+        lower = np.array([0, 0, 255-Frame.hsvMargin], dtype="uint8")
+        upper = np.array([255, Frame.hsvMargin, 255], dtype="uint8")
         self.threshmsk = cv2.inRange(image, lower, upper)
         cv2.imwrite(os.path.expanduser("~/threshmsk.png"),self.threshmsk)
         step = 1
