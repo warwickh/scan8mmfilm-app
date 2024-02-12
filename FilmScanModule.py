@@ -57,7 +57,7 @@ class Ini:
             Frame.r8_midx = config[Ini.frame].getint('r8_midx')
             Frame.r8_midy = config[Ini.frame].getint('r8_midy')
             Frame.edgeAuto = config[Ini.frame].getboolean('edgeAuto')
-            #Frame.ratioX2 = config[Ini.frame].getint('ratioX2')
+            Frame.hsvMargin = config[Ini.frame].getint('hsvMargin')
             Frame.analysisType = config[Ini.frame]['analysisType']
             Frame.whiteThreshold = config[Ini.frame].getint('whiteThreshold')
             #Frame.filmPlateEdge = config[Ini.frame].getfloat('filmPlateEdge')
@@ -114,7 +114,7 @@ class Ini:
         config[Ini.frame]['r8_midy'] = str(Frame.r8_midy)
         config[Ini.frame]['analysisType'] = str(Frame.analysisType)
         config[Ini.frame]['edgeAuto'] = str(Frame.edgeAuto)
-        #config[Ini.frame]['ratioX2'] = str(Frame.ratioX2)
+        config[Ini.frame]['hsvMargin'] = str(Frame.hsvMargin)
         config[Ini.frame]['whiteThreshold'] = str(Frame.whiteThreshold)
         #config[Ini.frame]['filmPlateEdge'] = str(Frame.filmPlateEdge)
         Frame.s8_frameCrop.save(config)
@@ -219,6 +219,7 @@ class Frame:
     analysisType = 'auto'
     edgeDetection = 'auto'
     filmEdge = 200
+    hsvMargin = 55
     #ratioX1 = 385
     #ratioX2 = 564
     edgeAuto = True
@@ -928,10 +929,10 @@ class Frame:
   
         self.imageHoleCrop = self.image[:,int(x1):int(x1+2*(x2-x1)),:]
         self.imageHoleCropHide = self.image[:,int(x1):int(x2),:]
-        hsvMargin=50
+        #hsvMargin=50
         image = cv2.cvtColor(self.imageHoleCropHide, cv2.COLOR_BGR2HSV)
-        lower = np.array([0, 0, 255-hsvMargin], dtype="uint8")
-        upper = np.array([255, hsvMargin, 255], dtype="uint8")
+        lower = np.array([0, 0, 255-Frame.hsvMargin], dtype="uint8")
+        upper = np.array([255, Frame.hsvMargin, 255], dtype="uint8")
         mask = cv2.inRange(image, lower, upper)
         masked = cv2.bitwise_and(self.imageHoleCropHide, self.imageHoleCropHide, mask=mask)
         cv2.imwrite(os.path.expanduser("~/whitemsk.png"), mask)

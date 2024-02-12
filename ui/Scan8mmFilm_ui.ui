@@ -713,7 +713,7 @@
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_xstart_2">
              <item>
-              <widget class="QPushButton" name="pbtnSetWT">
+              <widget class="QPushButton" name="pbtnDetectWT">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                  <horstretch>0</horstretch>
@@ -721,12 +721,12 @@
                 </sizepolicy>
                </property>
                <property name="text">
-                <string>Set</string>
+                <string>Detect</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QPushButton" name="pbtnChkWT">
+              <widget class="QPushButton" name="pbtnApplyWT">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                  <horstretch>0</horstretch>
@@ -734,13 +734,16 @@
                 </sizepolicy>
                </property>
                <property name="text">
-                <string>Check</string>
+                <string>Apply</string>
                </property>
               </widget>
              </item>
             </layout>
            </item>
           </layout>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="sbHsvMargin"/>
          </item>
         </layout>
        </widget>

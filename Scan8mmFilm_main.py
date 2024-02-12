@@ -53,6 +53,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.dsbInner.setValue(float(Frame.innerThresh))
         self.dsbOuter.setValue(float(Frame.outerThresh))
         self.sbWT.setValue(int(Frame.whiteThreshold))
+        self.sbHsvMargin.setValue(Frame.hsvMargin)
         #print(f"Init str(Frame.analysisType) {str(Frame.analysisType)}")
         self.connectSignalsSlots()
         self.lblHoleCrop.setMinimumWidth(Frame.getHoleCropWidth())
@@ -96,6 +97,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.dsbOuter.valueChanged.connect(self.outerThreshChanged)
         self.dsbInner.valueChanged.connect(self.innerThreshChanged)
         #self.sbWT.valueChanged.connect(self.whiteThresholdChanged)
+        self.sbHsvMargin.valueChanged.connect(self.hsvMarginChanged)
         self.pbtnX1Minus.clicked.connect(self.x1Minus)
         self.pbtnX1Plus.clicked.connect(self.x1Plus)
         self.pbtnX2Minus.clicked.connect(self.x2Minus)
@@ -353,6 +355,11 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def whiteThresholdChanged(self):
         Frame.whiteThreshold = self.sbWT.value()
+        self.refreshFrame()
+        self.showAdjustValues()
+
+    def hsvMarginChanged(self):
+        Frame.hsvMargin = self.sbHsvMargin()
         self.refreshFrame()
         self.showAdjustValues()
 
