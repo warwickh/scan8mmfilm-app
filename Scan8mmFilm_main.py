@@ -91,8 +91,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnMakeFilm.clicked.connect(self.makeFilm)
         #self.pbtnLedPlus.clicked.connect(self.ledPlus)
         #self.pbtnLedMinus.clicked.connect(self.ledMinus)
-        self.pbtnSetWT.clicked.connect(self.setWT)
-        self.pbtnChkWT.clicked.connect(self.whiteThresholdChanged)
+        self.pbtnApplyWT.clicked.connect(self.whiteThresholdApply)
+        self.pbtnDetectWT.clicked.connect(self.whiteThresholdDetect)
         self.pbtnSpool.clicked.connect(self.spool)
         self.dsbOuter.valueChanged.connect(self.outerThreshChanged)
         self.dsbInner.valueChanged.connect(self.innerThreshChanged)
@@ -353,7 +353,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.refreshFrame()
         self.showAdjustValues()
 
-    def whiteThresholdChanged(self):
+    def whiteThresholdApply(self):
         Frame.whiteThreshold = self.sbWT.value()
         self.refreshFrame()
         self.showAdjustValues()
@@ -385,7 +385,7 @@ class Window(QMainWindow, Ui_MainWindow):
     #            Film.led_dc = pidevi.ledMinus()
     #            print(f"LED DC now {Film.led_dc}")
 
-    def setWT(self):
+    def whiteThresholdDetect(self):
         Frame.whiteThreshold = self.frame.getWhiteThreshold()
         self.sbWT.setValue(int(Frame.whiteThreshold))
         print(f"Setting white threshold to {Frame.whiteThreshold} from image")
