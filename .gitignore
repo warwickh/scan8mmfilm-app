@@ -9,7 +9,12 @@ __pycache__/
 scanframes/
 cropframes/
 *.png
+<<<<<<< HEAD
+x265_2pass.log.cutree
+x265_2pass.log
+=======
 
+>>>>>>> 5f3dffff76af9c4d7e7b6fb73631a1d85022b8ef
 # Distribution / packaging
 .Python
 build/
