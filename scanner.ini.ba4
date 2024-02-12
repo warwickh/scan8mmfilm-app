@@ -8,7 +8,7 @@ view_width = 3280
 view_height = 2464
 
 [film]
-format = r8
+format = s8
 led_dc = 100
 resolution = 720x540
 s8_framerate = 18
@@ -17,7 +17,7 @@ r8_framerate = 16
 r8_steps_pr_frame = 80
 
 [frame]
-format = r8
+format = s8
 outerthresh = 0.8003226164480267
 innerthresh = 0.3
 s8_stdsprocketheight = 0.13
@@ -31,20 +31,15 @@ r8_ratio = 2.5896762904636925
 r8_midx = 64
 r8_midy = 120
 analysistype = ratio
-edgeauto = True
-whitethreshold = 202
+ratiox1 = 720
+ratiox2 = 1105
+whitethreshold = 168
 
 [s8_frame_crop]
 x1 = 2
-x2 = 1635
-y1 = -117
-y2 = 993
-
-[s8_hole_crop]
-x1 = 332
-x2 = 476
-y1 = 0
-y2 = 0
+x2 = 1455
+y1 = -107
+y2 = 933
 
 [s8_white_crop]
 x1 = -185
@@ -58,21 +53,9 @@ x2 = 1383
 y1 = 11
 y2 = 1022
 
-[r8_hole_crop]
-x1 = 514
-x2 = 855
-y1 = 0
-y2 = 0
-
 [r8_white_crop]
 x1 = -463
 x2 = -38
-y1 = 947
-y2 = 1221
-
-[filmPlate]
-x1 = 195
-x2 = 2523
-y1 = 0
-y2 = 2072
+y1 = 957
+y2 = 1231
 

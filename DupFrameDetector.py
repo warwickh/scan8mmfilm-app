@@ -18,6 +18,8 @@ class DupFrameDetector:
         self.vgg16 = VGG16(weights='imagenet', include_top=False, pooling='max', input_shape=(224, 224, 3))
         self.prepare_model()
         self.loaded = False
+        self.img1 = None
+        self.img2 = None
 
     def prepare_model(self):
         for model_layer in self.vgg16.layers:

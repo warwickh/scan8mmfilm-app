@@ -56,16 +56,18 @@ class Ini:
             Frame.r8_ratio = config[Ini.frame].getfloat('r8_ratio')
             Frame.r8_midx = config[Ini.frame].getint('r8_midx')
             Frame.r8_midy = config[Ini.frame].getint('r8_midy')
-            Frame.ratioX1 = config[Ini.frame].getint('ratioX1')
-            Frame.ratioX2 = config[Ini.frame].getint('ratioX2')
+            Frame.edgeAuto = config[Ini.frame].getboolean('edgeAuto')
+            #Frame.ratioX2 = config[Ini.frame].getint('ratioX2')
             Frame.analysisType = config[Ini.frame]['analysisType']
             Frame.whiteThreshold = config[Ini.frame].getint('whiteThreshold')
+            #Frame.filmPlateEdge = config[Ini.frame].getfloat('filmPlateEdge')
             Frame.s8_frameCrop.load(config)
-            #Frame.s8_holeCrop.load(config)
+            Frame.s8_holeCrop.load(config)
             Frame.r8_frameCrop.load(config)
-            #Frame.r8_holeCrop.load(config)
+            Frame.r8_holeCrop.load(config)
             Frame.s8_whiteCrop.load(config)
             Frame.r8_whiteCrop.load(config)
+            Frame.filmPlate.load(config)
         else:
             Ini.saveConfig()
 
@@ -111,25 +113,26 @@ class Ini:
         config[Ini.frame]['r8_midx'] = str(Frame.r8_midx)
         config[Ini.frame]['r8_midy'] = str(Frame.r8_midy)
         config[Ini.frame]['analysisType'] = str(Frame.analysisType)
-        config[Ini.frame]['ratioX1'] = str(Frame.ratioX1)
-        config[Ini.frame]['ratioX2'] = str(Frame.ratioX2)
+        config[Ini.frame]['edgeAuto'] = str(Frame.edgeAuto)
+        #config[Ini.frame]['ratioX2'] = str(Frame.ratioX2)
         config[Ini.frame]['whiteThreshold'] = str(Frame.whiteThreshold)
-
+        #config[Ini.frame]['filmPlateEdge'] = str(Frame.filmPlateEdge)
         Frame.s8_frameCrop.save(config)
-        #Frame.s8_holeCrop.save(config)
+        Frame.s8_holeCrop.save(config)
         Frame.s8_whiteCrop.save(config)
         Frame.r8_frameCrop.save(config)
-        #Frame.r8_holeCrop.save(config)
+        Frame.r8_holeCrop.save(config)
         Frame.r8_whiteCrop.save(config)
+        Frame.filmPlate.save(config)
 
         with open(inifile, 'w') as configfile:
             config.write(configfile)
         
 def getAdjustableRects():
-    if Film.format == 's8':
-        return [Frame.s8_frameCrop, Frame.s8_whiteCrop]#, Frame.s8_holeCrop]
+    if Frame.format == 's8':
+        return [Frame.s8_frameCrop, Frame.s8_whiteCrop, Frame.filmPlate, Frame.s8_holeCrop]
     else:
-        return [Frame.r8_frameCrop, Frame.r8_whiteCrop]#, Frame.r8_holeCrop]
+        return [Frame.r8_frameCrop, Frame.r8_whiteCrop, Frame.filmPlate, Frame.r8_holeCrop]
     
 def getAnalysisTypes():
     return ["auto", "thresh", "ratio", "manual"]
@@ -192,7 +195,7 @@ class Frame:
     format = "s8"
     s8_frameCrop = Rect("s8_frame_crop", 2, -107, 2+1453, 1040-107)
     #s8_holeCrop = Rect("s8_hole_crop", 75, 0, 110, 2463) 
-    #s8_holeCrop = Rect("s8_hole_crop", 385, 0, 564, 2463) 
+    s8_holeCrop = Rect("s8_hole_crop", 385, 0, 564, 0) 
     s8_whiteCrop = Rect("s8_white_crop", -185, -109, -27, 122)
     s8_stdSprocketHeight = 0.13
     s8_stdSprocketWidth = 0.055
@@ -200,7 +203,7 @@ class Frame:
     s8_midy = 240
     r8_frameCrop = Rect("r8_frame_crop", 15, 11, 1383, 1022)
     #r8_holeCrop = Rect("r8_hole_crop", 75, 0, 240, 276)
-    #r8_holeCrop = Rect("r8_hole_crop", 385, 0, 1230, 1415)
+    r8_holeCrop = Rect("r8_hole_crop", 385, 0, 564, 0)
     r8_whiteCrop = Rect("r8_white_crop",  -463, 947, -38, 1221)
     r8_stdSprocketHeight = 0.13
     r8_stdSprocketWidth = 0.13    
@@ -216,10 +219,13 @@ class Frame:
     analysisType = 'auto'
     edgeDetection = 'auto'
     filmEdge = 200
-    ratioX1 = 385
-    ratioX2 = 564
+    #ratioX1 = 385
+    #ratioX2 = 564
+    edgeAuto = True
     threshX1 = 385
     threshX2 = 564
+    filmPlate = Rect("filmPlate", 195, 0, 2523,2072)
+    #filmPlateEdge = 0.10#TODO need adjusment method??
 
     def initScaleFactor():
         Frame.ScaleFactor = Camera.ViewWidth/640.0 
@@ -254,7 +260,7 @@ class Frame:
             print(f"Checking {Frame.s8_stdSprocketHeight}")
             self.stdSprocketHeight = Frame.s8_stdSprocketHeight*self.dy
             self.stdSprocketWidth = Frame.s8_stdSprocketWidth*self.dx          
-            #self.holeCrop = Frame.s8_holeCrop#Rect("hole_crop", Frame.s8_holeCrop.x1*self.ScaleFactor, 0, Frame.s8_holeCrop.x2*self.ScaleFactor, self.dy-1)
+            self.holeCrop = Frame.s8_holeCrop#Rect("hole_crop", Frame.s8_holeCrop.x1*self.ScaleFactor, 0, Frame.s8_holeCrop.x2*self.ScaleFactor, self.dy-1)
             self.frameCrop = Frame.s8_frameCrop
             self.whiteCrop = Frame.s8_whiteCrop
             self.ratio = Frame.s8_ratio
@@ -263,7 +269,7 @@ class Frame:
             print(f"Frame.r8_stdSprocketWidth {Frame.r8_stdSprocketWidth}")
             self.stdSprocketHeight = Frame.r8_stdSprocketHeight*self.dy
             self.stdSprocketWidth = Frame.r8_stdSprocketWidth*self.dx
-            #self.holeCrop = Frame.r8_holeCrop#Rect("hole_crop", Frame.r8_holeCrop.x1*self.ScaleFactor, 0, Frame.r8_holeCrop.x2*self.ScaleFactor, self.dy-1)
+            self.holeCrop = Frame.r8_holeCrop#Rect("hole_crop", Frame.r8_holeCrop.x1*self.ScaleFactor, 0, Frame.r8_holeCrop.x2*self.ScaleFactor, self.dy-1)
             self.frameCrop = Frame.r8_frameCrop
             self.whiteCrop = Frame.r8_whiteCrop
             self.ratio = Frame.r8_ratio
@@ -344,6 +350,12 @@ class Frame:
         wp1 = (round(self.rX+self.whiteCrop.x1), round(self.cY+self.whiteCrop.y1))
         wp2 = (round(self.rX+self.whiteCrop.x2), round(self.cY+self.whiteCrop.y2))
         cv2.rectangle(self.image, wp1, wp2, (60, 240, 240), 10)
+        wp1 = (round(Frame.filmPlate.x1), round(Frame.filmPlate.y1))
+        wp2 = (round(Frame.filmPlate.x2), round(Frame.filmPlate.y2))
+        cv2.rectangle(self.image, wp1, wp2, (0, 0, 255), 5)
+        wp1 = (round(self.holeCrop.x1), 0)
+        wp2 = (round(self.holeCrop.x2), self.dy)
+        cv2.rectangle(self.image, wp1, wp2, (255, 0, 0), 3)
         return self.convert_cv_qt(self.image, dest)
         
     def cropPic(self):
@@ -404,10 +416,13 @@ class Frame:
         y2 = self.dy
         #x1 = int(Frame.holeCrop.x1*Frame.ScaleFactor)
         #x2 = int(Frame.holeCrop.x2*Frame.ScaleFactor)
-        x1 = int(Frame.ratioX1)
-        x2 = int(Frame.ratioX2)
+        #x1 = int(Frame.ratioX1)
+        #x2 = int(Frame.ratioX2)
+        x1 = self.holeCrop.x1
+        x2 = self.holeCrop.x2
         print(f"x1 {x1} x2 {x2} y1 {y1} y2 {y2}")
-        self.imageHoleCrop = self.image[:,int(x1):int(x1+2*(x2-x1)),:]
+        self.imageHoleCrop = self.image.copy()
+        self.imageHoleCrop = self.imageHoleCrop[:,int(x1):int(x1+2*(x2-x1)),:]
         self.imageHoleCropHide = self.image[:,int(x1):int(x2),:]
         sprocketEdges = np.absolute(cv2.Sobel(self.imageHoleCropHide,cv2.CV_64F,0,1,ksize=3))
         histogram     = np.mean(sprocketEdges,axis=(1,2))
@@ -893,19 +908,24 @@ class Frame:
         self.peaks = []
         self.smoothedHisto = []
         lX = self.findSprocketLeft()
-        x1 = int(lX+(0.01*self.dx))#buffer for rough edge
         cY = self.cY
         rX = None
-        if not x1:
-            cv2.imwrite(os.path.expanduser("~/ratioa.png"), self.image)
-            cv2.imwrite(os.path.expanduser("~/ratiothresh.png"), self.thresh)
-            locateHoleResult = 5 #can't find left edge
-            print(f"Setting result to 5 - can't find left edge {self.imagePathName}")
-            raise Exception(f"Setting result to 5 - can't find left edge {self.imagePathName}")
-       
-        x2 = x1+int(self.stdSprocketWidth*0.8)
-        x1 = Frame.ratioX1
-        x2 = Frame.ratioX2
+        if not Frame.edgeAuto:
+            x1 = self.holeCrop.x1
+            x2 = self.holeCrop.x2  
+        else:
+            x1 = int(lX+(0.01*self.dx))#buffer for rough edge
+            if not x1:
+                cv2.imwrite(os.path.expanduser("~/ratioa.png"), self.image)
+                cv2.imwrite(os.path.expanduser("~/ratiothresh.png"), self.thresh)
+                locateHoleResult = 5 #can't find left edge
+                print(f"Setting result to 5 - can't find left edge {self.imagePathName}")
+                raise Exception(f"Setting result to 5 - can't find left edge {self.imagePathName}")
+        
+            x2 = x1+int(self.stdSprocketWidth*0.8)
+        #x1 = Frame.ratioX1
+        #x2 = Frame.ratioX2
+  
         self.imageHoleCrop = self.image[:,int(x1):int(x1+2*(x2-x1)),:]
         self.imageHoleCropHide = self.image[:,int(x1):int(x2),:]
         hsvMargin=50
@@ -935,8 +955,11 @@ class Frame:
                 print(f"Valid sprocket size {self.sprocketHeight}")
                 locateHoleResult = 0 #Sprocket size within range
                 rX = self.findSprocketRight(x1, x2, self.sprocketHeight, cY)
-                #Frame.ratioX1 = x1
-                #Frame.ratioX2 = x2
+                if Frame.edgeAuto:
+                    #Frame.ratioX1 = x1
+                    #Frame.ratioX2 = x2
+                    self.holeCrop.x1 = x1
+                    self.holeCrop.x2 = x2
             elif self.sprocketHeight>self.maxSprocketHeight:
                 print(f"Invalid sprocket size too big {self.sprocketHeight} max {self.maxSprocketHeight}")
                 locateHoleResult = 2 #Sprocket size too big
@@ -1039,8 +1062,11 @@ class Frame:
             histogram     = np.mean(sprocketEdges,axis=(1))
             
             self.smoothedHisto = cv2.GaussianBlur(histogram,(1,filterSize),0)
-        Frame.ratioX1 = x1
-        Frame.ratioX2 = x2
+        #Frame.ratioX1 = x1
+        #Frame.ratioX2 = x2
+        if not Frame.edgeAuto:
+            self.holeCrop.x1 = x1
+            self.holeCrop.x2 = x2
         #Find the y search range
         #sprocketStart, sprocketSize = self.findSprocket(x1,x2)
         #raise Exception(f"Stopping here")
@@ -1117,18 +1143,17 @@ class Frame:
 
     def findLeftEdge(self):
         #returnlX = self.lX
-        filmPlateEdge = 0.10#TODO need adjusment method??
         filmEdge = self.filmEdge
         searchRange = self.stdSprocketWidth*1.2#450 #may need to adjust with image size
         #ratioThresh = 0.1 #may need to adjust with film format
         filmEdgeTrigger = 0.01
         #searchStart = int(self.holeCrop.x1-searchRange)
-        searchStart = int(filmPlateEdge*self.dx)#int(0.05*self.dx) #to the right of left edge of films
+        searchStart = int(Frame.filmPlate.x1)#int(0.05*self.dx) #to the right of left edge of films
         #searchStart =self.lx-(0.1*self.dx) #TODO set frame edge should only be full black on film edge
         searchEnd = int(searchStart+searchRange)
 
         #use HSV Range for edge detection
-        hsvMargin=50
+        hsvMargin=55
         image = cv2.cvtColor(self.image, cv2.COLOR_BGR2HSV)
         lower = np.array([0, 0, 255-hsvMargin], dtype="uint8")
         upper = np.array([255, hsvMargin, 255], dtype="uint8")
@@ -1166,7 +1191,8 @@ class Frame:
         for x1 in range(searchStart,searchEnd,step):
             strip = self.threshmsk[:,int(x1):int(x1+step),]
             ratio = float(np.sum(strip == 255)/(self.dy*step))
-            print(f"Ratio calc result {ratio} white {np.sum(strip==255)} / steparea {self.dy*step}")
+            print(f"Ratio calc result at {x1} {ratio} white {np.sum(strip==255)} / steparea {self.dy*step}")
+            #cv2.imwrite(os.path.expanduser(f"~/strip_{x1}.png"), strip)
             #print(f"x {x1} ratio {ratio} {np.sum(strip == 255)} dx {self.dy*step}")
             p1 = (int(x1), int(0)) 
             p2 = (int(x1), int(self.dy)) 

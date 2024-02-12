@@ -82,6 +82,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnLeft.clicked.connect(self.left)
         self.pbtnRight.clicked.connect(self.right)
         self.rbtnScan.toggled.connect(self.modeChanged)
+        self.rbtnS8.toggled.connect(self.formatChanged)
+        
         self.pbtnNext.clicked.connect(self.nnext)
         self.pbtnPrevious.clicked.connect(self.previous)
         self.pbtnRandom.clicked.connect(self.random)
@@ -166,6 +168,21 @@ class Window(QMainWindow, Ui_MainWindow):
 
     # Button actions ---------------------------------------------------------------------------------------------------------------
     
+    def formatChanged(self):
+        if self.rbtnS8.isChecked():
+            print("Selected S8")
+            Frame.format = "s8"
+            self.film.format = "s8"
+        else:
+            print("Selected R8")
+            Frame.format = "r8"
+            self.film.format = "r8"
+        self.adjustableRects = getAdjustableRects()
+        self.comboBox.clear()
+        for r in self.adjustableRects:
+            self.comboBox.addItem(r.name)
+        self.modeChanged()
+
     def modeChanged(self):
         self.prepLblImage()
         if self.rbtnScan.isChecked():
@@ -482,6 +499,9 @@ class Window(QMainWindow, Ui_MainWindow):
         crop = self.rbtnCrop.isChecked()
         frame = self.frame is not None # True if scan folder has frames
 
+        self. rbtnR8.setEnabled(True)
+        self. rbtnS8.setEnabled(True)
+
         self.pbtnStart.setEnabled(idle and (scan or frame))
         self.pbtnStop.setEnabled(busy)
         self.pbtnMakeFilm.setEnabled(idle and crop and frame)
@@ -503,7 +523,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.menuFile.setEnabled(idle)
         self.edlFilmName.setEnabled(idle)
 
-        self.comboBox.setEnabled(idle and crop and frame)
+        self.comboBox.setEnabled(frame)#idle and crop and frame)
         self.rbtnPosition.setEnabled(idle and crop and frame)
         self.rbtnSize.setEnabled(idle and crop and frame)
         self.pbtnX1Minus.setEnabled(frame)
@@ -535,6 +555,10 @@ class Window(QMainWindow, Ui_MainWindow):
         self.frame = None
         self.lblImage.clear()
         self.lblHoleCrop.clear()
+        if Frame.format == "s8":
+            self.rbtnS8.setChecked(True)
+        else:
+            self.rbtnR8.setChecked(True)
         if picamera2_present:
             self.timer = QTimer()
             self.timer.timeout.connect(self.motorTimeout)
@@ -551,8 +575,8 @@ class Window(QMainWindow, Ui_MainWindow):
             else:
                 self.rbtnCrop.setChecked(True) 
         self.enableButtons(busy=False)
-        self.lblX1.setText(str(Frame.ratioX1))
-        self.lblX2.setText(str(Frame.ratioX2))
+        #self.lblX1.setText(str(Frame.ratioX1))
+        #self.lblX2.setText(str(Frame.ratioX2))
 
     def updateInfoPanel(self):
         self.lblCropInfo.setText(f"Cropped frame count {Film.getCropCount()}")

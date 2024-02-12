@@ -114,6 +114,11 @@ class DupFrameDetector:
         assert(feature_vector.shape == (1,4096))
         return feature_vector
 
+    def get_feature_vector(self, img):#TODO test for direct passing of image
+        img1 = cv2.resize(img, (224, 224))
+        feature_vector = self.feature_model.predict(img1.reshape(1, 224, 224, 3))
+        return feature_vector
+
     def get_feature_vector_fromPIL_rn(self, img,):
         feature_vector = self.feature_model_resnet.predict(img)
         a, b, c, n = feature_vector.shape
@@ -145,11 +150,10 @@ class DupFrameDetector:
         #roll = "roll6"
         #folder = os.path.expanduser(f"~/scanframes/crop/{roll}")
         os.chdir(folder)
-        fileList = sorted(glob.glob('frame003[56]*[!_diff].jpg'))
+        fileList = sorted(glob.glob('frame*.jpg'))
         lastImage = None
         #logPath = os.path.expanduser(f"~/dups/log.csv")
-        self.logPath = os.path.join(folder,f"frame_dups_vg_rn.csv")
-        #transPath = os.path.expanduser(f"~/{roll}_transforms.csv")
+        self.logPath = os.path.join(folder,f"frame_dups.csv")
         if True:#not os.path.exists(self.logPath) or force:
             with open(self.logPath,'w') as logFile:
                 for fn in fileList:
