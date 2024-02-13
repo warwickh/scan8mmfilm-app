@@ -752,7 +752,7 @@ class QThreadScan(QtCore.QThread):
         self.film = film
         self.cmd = 1 # run 
         self.midy = None#self.frame.midy #TODO switch to per frame setting
-        self.tolerance = 6
+        self.tolerance = 30
         self.pixelsPerStep = 2.5
         self.parent = parent
         self.frameNo = Film.getFileCount(Film.scanFolder)
@@ -873,7 +873,7 @@ class QThreadScan(QtCore.QThread):
 # =============================================================================
 
 if __name__ == "__main__":
-    safe = False
+    safe = True#False
     if safe:
         try:
             app = QApplication(sys.argv) 
