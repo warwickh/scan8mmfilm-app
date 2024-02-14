@@ -61,6 +61,8 @@ class Ini:
             Frame.analysisType = config[Ini.frame]['analysisType']
             Frame.whiteThreshold = config[Ini.frame].getint('whiteThreshold')
             #Frame.filmPlateEdge = config[Ini.frame].getfloat('filmPlateEdge')
+            Frame.calcHole = config[Ini.frame].getint('calcHole')
+            Frame.calcGap = config[Ini.frame].getint('calcGap')
             Frame.s8_frameCrop.load(config)
             Frame.s8_holeCrop.load(config)
             Frame.r8_frameCrop.load(config)
@@ -117,6 +119,8 @@ class Ini:
         config[Ini.frame]['hsvMargin'] = str(Frame.hsvMargin)
         config[Ini.frame]['whiteThreshold'] = str(Frame.whiteThreshold)
         #config[Ini.frame]['filmPlateEdge'] = str(Frame.filmPlateEdge)
+        config[Ini.frame]['calcHole'] = str(Frame.calcHole)
+        config[Ini.frame]['calcGap'] = str(Frame.calcGap)
         Frame.s8_frameCrop.save(config)
         Frame.s8_holeCrop.save(config)
         Frame.s8_whiteCrop.save(config)
@@ -214,6 +218,12 @@ class Frame:
     innerThresh = 0.3
     s8_ratio = (4.23-1.143)/1.143 #gap/sprocket width
     r8_ratio = (4.23-1.27)/1.143 #gap/sprocket width
+    calcHole = 0
+    totHole = 0
+    cntHole = 0
+    calcGap = 0
+    totGap = 0
+    cntGap = 0
     hist_path = os.path.expanduser("~/my_cv2hist_lim.png")
     whiteThreshold = 225
     analysisType = 'auto'
@@ -403,6 +413,21 @@ class Frame:
 
 #=========================================================================
         
+    def isSprocketStart(self, location, size=50):
+        print(f"mask size {self.mask.shape} location {location} size {size}")
+        if not size<location<(self.dy-size):
+            print(f"Too close to edge at {location} so returning true")
+            return True #If close to edge assume start - we don't trust these anyway
+        stripDn = self.mask[location:location+size+5,:,]
+        stripUp = self.mask[location-size:location,:,]
+        print(f"stripup {stripUp.shape} stripdn {stripDn.shape}")
+        cv2.imwrite(os.path.expanduser("~/stripup.png"), stripUp)
+        cv2.imwrite(os.path.expanduser("~/stripdn.png"), stripDn)
+        ratioUp = float(np.sum(stripUp == 255)/(self.dy*100))
+        ratioDn = float(np.sum(stripDn == 255)/(self.dy*100))
+        print(f"location {location} ratio up {ratioUp} ratio down {ratioDn} sprocketstart {bool(ratioUp<ratioDn)}")
+        return bool(ratioUp<ratioDn)
+
     def findSprocket(self, x1, x2):
         print(f"Findsprocket x1 {x1} x2 {x2}")
         y1=0
@@ -432,40 +457,74 @@ class Frame:
                             testPeaks = [ \
                              peak+self.stdSprocketHeight #start to end sprocket
                             ,peak-self.stdSprocketHeight #end to start sprocket
-                            ,peak+self.stdSprocketHeight*self.ratio*1.02 #end to next start
-                            ,peak-self.stdSprocketHeight*self.ratio*1.02 #start to previous end
-                            ,peak+self.stdSprocketHeight*self.ratio*1.02+self.stdSprocketHeight #full start to start, end to end
-                            ,peak-self.stdSprocketHeight*self.ratio*1.02-self.stdSprocketHeight]
+                            ,peak+self.stdSprocketHeight*self.ratio*1.0 #end to next start
+                            ,peak-self.stdSprocketHeight*self.ratio*1.0 #start to previous end
+                            ,peak+self.stdSprocketHeight*self.ratio*1.0+self.stdSprocketHeight #full start to start, end to end
+                            ,peak-self.stdSprocketHeight*self.ratio*1.0-self.stdSprocketHeight]
                             #print(f"testpeaks {testPeaks}")
                             valueSet = [peak]
                             sprocketStart = None
                             for i in range(len(testPeaks)):#sprocket/gap fup/down from current peak test for correct
                                 if testPeaks[i]>0: 
                                     #for testPeak in testPeaks:
-                                    upper = testPeaks[i]*1.15
-                                    lower = testPeaks[i]*0.85
+                                    upper = testPeaks[i]*1.12
+                                    lower = testPeaks[i]*0.88
                                     if 800<peak<=900:
                                         plt.axvline(upper, color='orange', linewidth=1,label=f"upper_{testPeaks[i]}")
                                         plt.axvline(lower, color='orange', linewidth=1,label=f"lower_{testPeaks[i]}")
-                                        
+                                    isSprocketStart = self.isSprocketStart(peak)
                                     #plt.axvline(testPeak, color='red', linewidth=1,label=f"testPeak")
                                     for loc in peaks:
                                         if lower<loc<upper:
                                             if 800<peak<=900:
                                                 plt.axvline(testPeaks[i], color='green', linewidth=1,label=f"inrange_{testPeaks[i]}")
-                                            print(f"peak {peak} testPeak {i} {testPeaks[i]} Found loc {loc} within {lower} {upper} so good")
-                                            if i==0:
+                                            print(f"peak {peak} start {isSprocketStart} testPeak {i} {testPeaks[i]} Found loc {loc} within {lower} {upper} so good")
+                                            if i==0 and isSprocketStart:
                                                 print(f"i is 0 so {peak} should be the sprocketstart")
                                                 sprocketStart = peak
-                                                sprocketEnd = testPeaks[0]
-                                            elif i==1:
+                                                sprocketEnd = loc#testPeaks[0]
+                                                Frame.cntHole+=1
+                                                Frame.totHole+=abs(loc-peak)
+                                                Frame.calcHole = Frame.totHole//Frame.cntHole
+                                                print(f"Adding {abs(loc-peak)} to hole average")
+                                                print(f"Calculated mean hole {Frame.calcHole} versus {self.stdSprocketHeight}")
+                                            elif i==1 and not isSprocketStart:
                                                 print(f"i is 1 so the peak before {peak} should be the sprocketstart")
                                                 #print(f"try {peaks[peaks.index(peak)-1]}")
                                                 #sprocketStart = peaks[peaks.index(peak)-1]
-                                                sprocketStart = loc
+                                                if self.isSprocketStart(loc):
+                                                    sprocketStart = loc
+                                                    sprocketEnd = peak
+                                                    Frame.cntHole+=1
+                                                    Frame.totHole+=abs(loc-peak)
+                                                    Frame.calcHole = Frame.totHole//Frame.cntHole
+                                                    print(f"Adding {abs(loc-peak)} to hole average")
+                                                    print(f"Calculated mean hole {Frame.calcHole} versus {self.stdSprocketHeight} after {Frame.cntHole}")
+                                            
+                                            elif i in [2,3]:
+                                                print(f"gap distance away")
+                                                Frame.cntGap+=1
+                                                Frame.totGap+=abs(loc-peak)
+                                                Frame.calcGap = Frame.totGap//Frame.cntGap
+                                                print(f"Calculated mean gap {Frame.calcGap} versus {self.stdSprocketHeight*self.ratio} and 102% {self.stdSprocketHeight*self.ratio*1.02}")
+                                                print(f'============================= ratio should be {Frame.calcGap/Frame.calcHole} instead of {self.ratio}=======================')
+                                            elif i == 4 and not isSprocketStart:
+                                                print(f"Full cycle up so is it start or end, this is {peaks.index(peak)} for {len(peaks)} peaks from {peaks}")
+                                                #if self.isSprocketStart(peak):
+                                                    #sprocketStart = peak
+                                                    #sprocketEnd = testPeaks[0]
+                                                #    pass#don't trust top of sprocket
+                                                #else:
+                                                sprocketStart = testPeaks[1]
                                                 sprocketEnd = peak
-                                            elif i in [4,5]:
-                                                print(f"Full cycle so use only first or last, this is {peaks.index(peak)} for {len(peaks)} peaks from {peaks}")
+                                            elif i == 5 and not isSprocketStart:
+                                                #if self.isSprocketStart(loc):
+                                                    #sprocketStart = loc
+                                                    #sprocketEnd = testPeaks[3]
+                                                #    pass#don't trust top of sprocket
+                                                #else:
+                                                sprocketEnd = loc
+                                                sprocketStart = testPeaks[2]
                                             plt.axvline(loc, color='green', linewidth=1,label=f"yes")
                                             valueSet.append(loc)
                                         else:
@@ -490,7 +549,7 @@ class Frame:
                                     plt.clf()
                                     return sprocketStart, sprocketHeight
                             else:
-                                plt.savefig(os.path.expanduser(f"~/findsprocketfail_{peak}.png"))
+                                plt.savefig(os.path.expanduser(f"~/findsprocketfail.png"))
                                 plt.clf()
                                 
         return None, None
@@ -724,13 +783,15 @@ class Frame:
         lower = np.array([0, 0, 255-Frame.hsvMargin], dtype="uint8")
         upper = np.array([255, Frame.hsvMargin, 255], dtype="uint8")
         print(f"hsv lower {lower} upper {upper}")
-        mask = cv2.inRange(image, lower, upper)
-        masked = cv2.bitwise_and(self.imageHoleCropHide, self.imageHoleCropHide, mask=mask)
-        cv2.imwrite(os.path.expanduser("~/whitemsk.png"), mask)
+        self.mask = cv2.inRange(image, lower, upper)
+        masked = cv2.bitwise_and(self.imageHoleCropHide, self.imageHoleCropHide, mask=self.mask)
+        print(f"debug image outputs mask {self.mask.shape} masked {masked.shape} crophide {self.imageHoleCropHide.shape}")
+        cv2.imwrite(os.path.expanduser("~/whitemsk.png"), self.mask)
         cv2.imwrite(os.path.expanduser("~/masked.png"), masked)
         cv2.imwrite(os.path.expanduser("~/imageHoleCropHide.png"), self.imageHoleCropHide)
+        print("Got here")
         #sprocketEdges = np.absolute(cv2.Sobel(self.imageHoleCropHide,cv2.CV_64F,0,1,ksize=3))
-        sprocketEdges = np.absolute(cv2.Sobel(mask,cv2.CV_64F,0,1,ksize=3))
+        sprocketEdges = np.absolute(cv2.Sobel(self.mask,cv2.CV_64F,0,1,ksize=3))
         #histogram     = np.mean(sprocketEdges,axis=(1,2))
         histogram     = np.mean(sprocketEdges,axis=(1))
         self.smoothedHisto = cv2.GaussianBlur(histogram,(1,filterSize),0)
@@ -1173,6 +1234,7 @@ class Film:
         fileList = sorted(glob.glob('*.jpg'))
         self.scanFileCount = len(fileList)
         for fn in fileList:
+            print(f"Cropping {fn}")
             outFileName = os.path.join(Film.cropFolder, f"frame{frameNo:06}.jpg")
             if not os.path.isfile(outFileName):
                 frame = Frame(os.path.join(Film.scanFolder, fn))
