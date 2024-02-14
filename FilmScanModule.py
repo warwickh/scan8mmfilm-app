@@ -455,12 +455,12 @@ class Frame:
                             plt.plot(self.smoothedHisto)
                             plt.axhline(z, color='blue', linewidth=1)
                             testPeaks = [ \
-                             peak+self.stdSprocketHeight #start to end sprocket
-                            ,peak-self.stdSprocketHeight #end to start sprocket
-                            ,peak+self.stdSprocketHeight*self.ratio*1.0 #end to next start
-                            ,peak-self.stdSprocketHeight*self.ratio*1.0 #start to previous end
-                            ,peak+self.stdSprocketHeight*self.ratio*1.0+self.stdSprocketHeight #full start to start, end to end
-                            ,peak-self.stdSprocketHeight*self.ratio*1.0-self.stdSprocketHeight]
+                            # peak+self.stdSprocketHeight, #start to end sprocket
+                            peak-self.stdSprocketHeight, #end to start sprocket
+                            #peak+self.stdSprocketHeight*self.ratio*1.0, #end to next start
+                            #peak-self.stdSprocketHeight*self.ratio*1.0, #start to previous end
+                            peak+self.stdSprocketHeight*self.ratio+self.stdSprocketHeight, #full start to start, end to end
+                            peak-self.stdSprocketHeight*self.ratio-self.stdSprocketHeight]
                             #print(f"testpeaks {testPeaks}")
                             valueSet = [peak]
                             sprocketStart = None
@@ -469,71 +469,26 @@ class Frame:
                                     #for testPeak in testPeaks:
                                     upper = testPeaks[i]*1.12
                                     lower = testPeaks[i]*0.88
-                                    if 800<peak<=900:
-                                        plt.axvline(upper, color='orange', linewidth=1,label=f"upper_{testPeaks[i]}")
-                                        plt.axvline(lower, color='orange', linewidth=1,label=f"lower_{testPeaks[i]}")
                                     isSprocketStart = self.isSprocketStart(peak)
                                     #plt.axvline(testPeak, color='red', linewidth=1,label=f"testPeak")
                                     for loc in peaks:
-                                        if lower<loc<upper:
-                                            if 800<peak<=900:
-                                                plt.axvline(testPeaks[i], color='green', linewidth=1,label=f"inrange_{testPeaks[i]}")
+                                        if lower<loc<upper and not isSprocketStart:
                                             print(f"peak {peak} start {isSprocketStart} testPeak {i} {testPeaks[i]} Found loc {loc} within {lower} {upper} so good")
-                                            if i==0 and isSprocketStart:
-                                                print(f"i is 0 so {peak} should be the sprocketstart")
-                                                sprocketStart = peak
-                                                sprocketEnd = loc#testPeaks[0]
-                                                Frame.cntHole+=1
-                                                Frame.totHole+=abs(loc-peak)
-                                                Frame.calcHole = Frame.totHole//Frame.cntHole
-                                                print(f"Adding {abs(loc-peak)} to hole average")
-                                                print(f"Calculated mean hole {Frame.calcHole} versus {self.stdSprocketHeight}")
-                                            elif i==1 and not isSprocketStart:
-                                                print(f"i is 1 so the peak before {peak} should be the sprocketstart")
-                                                #print(f"try {peaks[peaks.index(peak)-1]}")
-                                                #sprocketStart = peaks[peaks.index(peak)-1]
+                                            if i==0:
                                                 if self.isSprocketStart(loc):
                                                     sprocketStart = loc
                                                     sprocketEnd = peak
-                                                    Frame.cntHole+=1
-                                                    Frame.totHole+=abs(loc-peak)
-                                                    Frame.calcHole = Frame.totHole//Frame.cntHole
-                                                    print(f"Adding {abs(loc-peak)} to hole average")
-                                                    print(f"Calculated mean hole {Frame.calcHole} versus {self.stdSprocketHeight} after {Frame.cntHole}")
-                                            
-                                            elif i in [2,3]:
-                                                print(f"gap distance away")
-                                                Frame.cntGap+=1
-                                                Frame.totGap+=abs(loc-peak)
-                                                Frame.calcGap = Frame.totGap//Frame.cntGap
-                                                print(f"Calculated mean gap {Frame.calcGap} versus {self.stdSprocketHeight*self.ratio} and 102% {self.stdSprocketHeight*self.ratio*1.02}")
-                                                print(f'============================= ratio should be {Frame.calcGap/Frame.calcHole} instead of {self.ratio}=======================')
-                                            elif i == 4 and not isSprocketStart:
-                                                print(f"Full cycle up so is it start or end, this is {peaks.index(peak)} for {len(peaks)} peaks from {peaks}")
-                                                #if self.isSprocketStart(peak):
-                                                    #sprocketStart = peak
-                                                    #sprocketEnd = testPeaks[0]
-                                                #    pass#don't trust top of sprocket
-                                                #else:
+                                            elif i == 1:
                                                 sprocketStart = testPeaks[1]
                                                 sprocketEnd = peak
-                                            elif i == 5 and not isSprocketStart:
-                                                #if self.isSprocketStart(loc):
-                                                    #sprocketStart = loc
-                                                    #sprocketEnd = testPeaks[3]
-                                                #    pass#don't trust top of sprocket
-                                                #else:
+                                            elif i == 2:
                                                 sprocketEnd = loc
                                                 sprocketStart = testPeaks[2]
                                             plt.axvline(loc, color='green', linewidth=1,label=f"yes")
                                             valueSet.append(loc)
                                         else:
-                                            if 800<peak<=900:
-                                                plt.axvline(testPeaks[i], color='red', linewidth=1,label=f"{testPeaks[i]}")
                                             print(f"Failed peak {peak} testPeak {i} {testPeaks[i]} loc {loc} not within {lower} {upper} so fail")
-                            print(f"finished testing for {peaks} at {z} got {valueSet} sprocketstart {sprocketStart} sprocketEnd {sprocketEnd} =========================================")
-                        
-                            #print(f"End of test with peak list found {len(valueSet)} values {valueSet} from peaks {peaks}")            
+                            print(f"finished testing for {peaks} at {z} got {valueSet} sprocketstart {sprocketStart} sprocketEnd {sprocketEnd} =========================================")          
                             if len(valueSet)>1 and sprocketStart:
                                 valueSet.sort()   
                                 print(f"Got enough matching vals at {valueSet} sprocketstart {sprocketStart}")
@@ -916,7 +871,7 @@ class Frame:
         filmEdge = self.filmEdge
         searchRange = self.stdSprocketWidth*1.2#450 #may need to adjust with image size
         ratioThresh = 0.1 #may need to adjust with film format
-        step = int(5*self.ScaleFactor) #increase for faster
+        step = int(10*self.ScaleFactor) #increase for faster
         searchStart = int(filmEdge+(0.015*self.dx))#buffer for rough edge
         searchEnd = int(searchStart+searchRange)
         for x1 in range(searchStart,searchEnd,step):
