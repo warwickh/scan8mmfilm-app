@@ -34,7 +34,7 @@ class Window(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setupUi(self)
-        self.currentLimit = 0.99
+        self.currentLimit = 0.993
         #self.currentLimit = 0.077
         self.resultType = 'similarity'
         self.similarity=0
@@ -51,7 +51,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.feature_model_vgg = Model(inputs=model.input,outputs=model.get_layer(layer_name).output)
         self.feature_model_resnet = ResNet50(input_tensor=image_input, include_top=False,weights='imagenet')
         self.loaded = False
-        self.cropFolder = os.path.expanduser("~/scanframes/crop/roll5a")
+        self.cropFolder = os.path.expanduser("~/scanframes/crop/roll8")
         self.resultPath = os.path.join(self.cropFolder,"dup_results.csv")
         self.connectSignalsSlots()
         self.doLblImagePrep = False

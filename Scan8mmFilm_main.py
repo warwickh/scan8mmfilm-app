@@ -50,8 +50,8 @@ class Window(QMainWindow, Ui_MainWindow):
             # self.qpicamera2 = QGlPicamera2(picam2, width=3280, height=2464, keep_ar=True)
             self.qpicamera2 = QGlPicamera2(picam2, width=800, height=600, keep_ar=True)
             self.horizontalLayout_4.addWidget(self.qpicamera2)
-        self.dsbInner.setValue(float(Frame.innerThresh))
-        self.dsbOuter.setValue(float(Frame.outerThresh))
+        #self.dsbInner.setValue(float(Frame.innerThresh))
+        #self.dsbOuter.setValue(float(Frame.outerThresh))
         self.sbWT.setValue(int(Frame.whiteThreshold))
         self.sbHsvMargin.setValue(Frame.hsvMargin)
         #print(f"Init str(Frame.analysisType) {str(Frame.analysisType)}")
@@ -84,6 +84,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnRight.clicked.connect(self.right)
         self.rbtnScan.toggled.connect(self.modeChanged)
         self.rbtnS8.toggled.connect(self.formatChanged)
+        self.rbtnAutoEdge.toggled.connect(self.edgeDetChanged)
         
         self.pbtnNext.clicked.connect(self.nnext)
         self.pbtnPrevious.clicked.connect(self.previous)
@@ -94,14 +95,14 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnApplyWT.clicked.connect(self.whiteThresholdApply)
         self.pbtnDetectWT.clicked.connect(self.whiteThresholdDetect)
         self.pbtnSpool.clicked.connect(self.spool)
-        self.dsbOuter.valueChanged.connect(self.outerThreshChanged)
-        self.dsbInner.valueChanged.connect(self.innerThreshChanged)
+        #self.dsbOuter.valueChanged.connect(self.outerThreshChanged)
+        #self.dsbInner.valueChanged.connect(self.innerThreshChanged)
         #self.sbWT.valueChanged.connect(self.whiteThresholdChanged)
         self.sbHsvMargin.valueChanged.connect(self.hsvMarginChanged)
-        self.pbtnX1Minus.clicked.connect(self.x1Minus)
-        self.pbtnX1Plus.clicked.connect(self.x1Plus)
-        self.pbtnX2Minus.clicked.connect(self.x2Minus)
-        self.pbtnX2Plus.clicked.connect(self.x2Plus)
+        #self.pbtnX1Minus.clicked.connect(self.x1Minus)
+        #self.pbtnX1Plus.clicked.connect(self.x1Plus)
+        #self.pbtnX2Minus.clicked.connect(self.x2Minus)
+        #self.pbtnX2Plus.clicked.connect(self.x2Plus)
         self.actionExit.triggered.connect(self.doClose)
         self.actionAbout.triggered.connect(self.about)
         if  picamera2_present:
@@ -170,6 +171,14 @@ class Window(QMainWindow, Ui_MainWindow):
 
     # Button actions ---------------------------------------------------------------------------------------------------------------
     
+    def edgeDetChanged(self):
+        if self.rbtnAutoEdge.isChecked():
+            print("Selected auto edge detection")
+            Frame.edgeAuto = True
+        else:
+            print("Selected manual edge detection")
+            Frame.edgeAuto = False
+
     def formatChanged(self):
         if self.rbtnS8.isChecked():
             print("Selected S8")
@@ -368,15 +377,15 @@ class Window(QMainWindow, Ui_MainWindow):
         self.refreshFrame()
         self.showAdjustValues()
 
-    def outerThreshChanged(self):
-        Frame.outerThresh = self.dsbOuter.value()
-        self.refreshFrame()
-        self.showAdjustValues()
+    #def outerThreshChanged(self):
+    #    Frame.outerThresh = self.dsbOuter.value()
+    #    self.refreshFrame()
+    #    self.showAdjustValues()
         
-    def innerThreshChanged(self):
-        Frame.innerThresh = self.dsbInner.value()
-        self.refreshFrame()
-        self.showAdjustValues()
+    #def innerThreshChanged(self):
+    #    Frame.innerThresh = self.dsbInner.value()
+    #    self.refreshFrame()
+    #    self.showAdjustValues()
         
     #def ledPlus(self):
     #    if self.rbtnScan.isChecked():
@@ -390,29 +399,29 @@ class Window(QMainWindow, Ui_MainWindow):
     #            Film.led_dc = pidevi.ledMinus()
     #            print(f"LED DC now {Film.led_dc}")
 
-    def x1Plus(self):
-        Frame.ratioX1+=20
-        self.lblX1.setText(str(Frame.ratioX1))
-        self.refreshFrame()
-        self.showAdjustValues()
+    #def x1Plus(self):
+    #    Frame.ratioX1+=20
+    #    self.lblX1.setText(str(Frame.ratioX1))
+    #    self.refreshFrame()
+    #    self.showAdjustValues()
 
-    def x1Minus(self):
-        Frame.ratioX1-=20
-        self.lblX1.setText(str(Frame.ratioX1))
-        self.refreshFrame()
-        self.showAdjustValues()
+    #def x1Minus(self):
+    #    Frame.ratioX1-=20
+    #    self.lblX1.setText(str(Frame.ratioX1))
+    #    self.refreshFrame()
+    #    self.showAdjustValues()
                 
-    def x2Plus(self):
-        Frame.ratioX2+=20
-        self.lblX2.setText(str(Frame.ratioX2))
-        self.refreshFrame()
-        self.showAdjustValues()
+    #def x2Plus(self):
+    #    Frame.ratioX2+=20
+    #    self.lblX2.setText(str(Frame.ratioX2))
+    #    self.refreshFrame()
+    #    self.showAdjustValues()
                 
-    def x2Minus(self):
-        Frame.ratioX2-=20
-        self.lblX2.setText(str(Frame.ratioX2))
-        self.refreshFrame()
-        self.showAdjustValues()
+    #def x2Minus(self):
+    #    Frame.ratioX2-=20
+    #    self.lblX2.setText(str(Frame.ratioX2))
+    #    self.refreshFrame()
+    #    self.showAdjustValues()
     
     def spool(self):
         if picamera2_present:
@@ -517,10 +526,10 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnPrevious.setEnabled(idle and (pi or (crop and frame)))
         self.pbtnRandom.setEnabled(idle and crop and frame)
         
-        self.pbtnUp.setEnabled(idle and (pi or (crop and frame)))
-        self.pbtnDown.setEnabled(idle and (pi or (crop and frame)))
-        self.pbtnLeft.setEnabled(idle and crop and frame)
-        self.pbtnRight.setEnabled(idle and crop and frame)
+        self.pbtnUp.setEnabled(idle and (pi or frame))#(crop and frame)))
+        self.pbtnDown.setEnabled(idle and (pi or frame))#(crop and frame)))
+        self.pbtnLeft.setEnabled(idle and frame)#crop and frame)
+        self.pbtnRight.setEnabled(idle and frame)#crop and frame)
 
         self.rbtnScan.setEnabled(idle and pi)
         self.rbtnCrop.setEnabled(idle)
@@ -533,12 +542,13 @@ class Window(QMainWindow, Ui_MainWindow):
         self.comboBox.setEnabled(frame)#idle and crop and frame)
         self.rbtnPosition.setEnabled(idle and crop and frame)
         self.rbtnSize.setEnabled(idle and crop and frame)
-        self.pbtnX1Minus.setEnabled(frame)
-        self.pbtnX1Plus.setEnabled(frame)
-        self.pbtnX2Minus.setEnabled(frame)
-        self.pbtnX2Plus.setEnabled(frame)
-        self.dsbOuter.setEnabled(frame)
-        self.dsbInner.setEnabled(frame)
+        self.rbtnAutoEdge.setEnabled(frame)
+        #self.pbtnX1Minus.setEnabled(frame)
+        #self.pbtnX1Plus.setEnabled(frame)
+        #self.pbtnX2Minus.setEnabled(frame)
+        #self.pbtnX2Plus.setEnabled(frame)
+        #self.dsbOuter.setEnabled(frame)
+        #self.dsbInner.setEnabled(frame)
         self.sbWT.setEnabled(frame)
         #self.pbtnLedPlus.setEnabled(scan)
         #self.pbtnLedMinus.setEnabled(scan)
@@ -568,6 +578,10 @@ class Window(QMainWindow, Ui_MainWindow):
             self.rbtnS8.setChecked(True)
         else:
             self.rbtnR8.setChecked(True)
+        if Frame.edgeAuto:
+            self.rbtnAutoEdge.setChecked(True)
+        else:
+            self.rbtnManEdge.setChecked(True)
         if picamera2_present:
             self.timer = QTimer()
             self.timer.timeout.connect(self.motorTimeout)
@@ -873,7 +887,7 @@ class QThreadScan(QtCore.QThread):
 # =============================================================================
 
 if __name__ == "__main__":
-    safe = True#False
+    safe = False
     if safe:
         try:
             app = QApplication(sys.argv) 
