@@ -495,29 +495,6 @@
        </widget>
       </item>
       <item>
-       <widget class="QGroupBox" name="gboxEdgeDet">
-        <property name="title">
-         <string>Edge Detection</string>
-        </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_14">
-         <item>
-          <widget class="QRadioButton" name="rbtnAutoEdge">
-           <property name="text">
-            <string>Auto</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QRadioButton" name="rbtnManEdge">
-           <property name="text">
-            <string>Manual</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item>
        <widget class="QGroupBox" name="gboxAnalyseThresh">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
@@ -557,14 +534,10 @@
                 </sizepolicy>
                </property>
                <property name="text">
-                <string>WhiteThreshold</string>
+                <string>Thresh</string>
                </property>
               </widget>
              </item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_13">
              <item>
               <widget class="QSpinBox" name="sbWT">
                <property name="sizePolicy">
@@ -578,10 +551,6 @@
                </property>
               </widget>
              </item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_xstart_2">
              <item>
               <widget class="QPushButton" name="pbtnDetectWT">
                <property name="sizePolicy">
@@ -595,25 +564,69 @@
                </property>
               </widget>
              </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_xstart_2">
              <item>
-              <widget class="QPushButton" name="pbtnApplyWT">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
+              <widget class="QLabel" name="label">
                <property name="text">
-                <string>Apply</string>
+                <string>HSV</string>
                </property>
               </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="sbHsvMargin"/>
              </item>
             </layout>
            </item>
           </layout>
          </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="groupBox_2">
+        <property name="title">
+         <string>Thresh Type</string>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_6">
          <item>
-          <widget class="QSpinBox" name="sbHsvMargin"/>
+          <widget class="QRadioButton" name="rbtnThresh">
+           <property name="text">
+            <string>Thresh</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="rbtnHsv">
+           <property name="text">
+            <string>HSV</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="gboxEdgeDet">
+        <property name="title">
+         <string>Edge Detection</string>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_14">
+         <item>
+          <widget class="QRadioButton" name="rbtnAutoEdge">
+           <property name="text">
+            <string>Auto</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="rbtnManEdge">
+           <property name="text">
+            <string>Manual</string>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>

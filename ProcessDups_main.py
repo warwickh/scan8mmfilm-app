@@ -7,7 +7,6 @@ from PyQt5 import QtCore, QtWidgets
 #from FilmScanModule import Ini, Camera, Frame, Film, getAdjustableRects, getAnalysisTypes
 import sys
 import shutil
-from time import sleep
 import cv2
 import numpy as np 
 from resnet50 import ResNet50
@@ -88,10 +87,12 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnNotDup.clicked.connect(self.notDup)
         self.pbtnSkip.clicked.connect(self.skip)
         self.pbtnDelete.clicked.connect(self.delete)
+        self.pbtnRename.clicked.connect(self.rename)
         self.dsbLimit.valueChanged.connect(self.limitChanged)
         self.pbtnDup.setEnabled(False)
         self.pbtnNotDup.setEnabled(False)
         self.pbtnDelete.setEnabled(False)
+        self.pbtnRename.setEnabled(True)
         self.pbtnRestart.setEnabled(True)
         self.pbtnStart.setEnabled(False)
         self.pbtnSwap.setEnabled(False)
@@ -181,6 +182,11 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnDelete.setEnabled(False)
         self.deleteAll(self.cropFolder)
         self.pbtnDelete.setEnabled(True)
+
+    def rename(self):
+        self.pbtnRename.setEnabled(False)
+        self.renameAll(self.cropFolder)
+        self.pbtnRename.setEnabled(True)
 
     def swap(self):
         if self.currentImg==2:
@@ -273,6 +279,21 @@ class Window(QMainWindow, Ui_MainWindow):
             cv2.imwrite(f'./out/chkcrop1.png', img)
             cv2.imwrite(f'./out/chkcrop2.png', crop_img)
         return crop_img 
+
+    def renameAll(self, folder):
+        prefix = 'frame'
+        os.chdir(folder)
+        fileList = sorted(glob.glob(f'{prefix}*.jpg'))
+        self.frameCount = len(fileList)
+        print(f"Renaming {self.frameCount}")
+        self.currentFrame = 0
+        for fn in fileList:
+            newName = f'{prefix}{self.currentFrame:06d}.jpg'
+            print(f"Renaming {fn} to {newName}")
+            old = os.path.join(folder,fn)
+            new = os.path.join(folder,newName)
+            os.rename(old, new)
+            self.currentFrame +=1
 
     def deleteAll(self, folder):
         resultPath = os.path.join(folder,"dup_results.csv")

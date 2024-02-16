@@ -85,19 +85,19 @@ class Window(QMainWindow, Ui_MainWindow):
         self.rbtnScan.toggled.connect(self.modeChanged)
         self.rbtnS8.toggled.connect(self.formatChanged)
         self.rbtnAutoEdge.toggled.connect(self.edgeDetChanged)
-        
+        self.rbtnThresh.toggled.connect(self.threshTypeChanged)
         self.pbtnNext.clicked.connect(self.nnext)
         self.pbtnPrevious.clicked.connect(self.previous)
         self.pbtnRandom.clicked.connect(self.random)
         self.pbtnMakeFilm.clicked.connect(self.makeFilm)
         #self.pbtnLedPlus.clicked.connect(self.ledPlus)
         #self.pbtnLedMinus.clicked.connect(self.ledMinus)
-        self.pbtnApplyWT.clicked.connect(self.whiteThresholdApply)
+        #self.pbtnApplyWT.clicked.connect(self.whiteThresholdApply)
         self.pbtnDetectWT.clicked.connect(self.whiteThresholdDetect)
         self.pbtnSpool.clicked.connect(self.spool)
         #self.dsbOuter.valueChanged.connect(self.outerThreshChanged)
         #self.dsbInner.valueChanged.connect(self.innerThreshChanged)
-        #self.sbWT.valueChanged.connect(self.whiteThresholdChanged)
+        self.sbWT.valueChanged.connect(self.whiteThresholdApply)
         self.sbHsvMargin.valueChanged.connect(self.hsvMarginChanged)
         #self.pbtnX1Minus.clicked.connect(self.x1Minus)
         #self.pbtnX1Plus.clicked.connect(self.x1Plus)
@@ -178,6 +178,16 @@ class Window(QMainWindow, Ui_MainWindow):
         else:
             print("Selected manual edge detection")
             Frame.edgeAuto = False
+        self.modeChanged()
+
+    def threshTypeChanged(self):
+        if self.rbtnThresh.isChecked():
+            print("Selected white threshold value")
+            Frame.useThresh = True
+        else:
+            print("Selected HSV inrange value")
+            Frame.useThresh = False
+        self.modeChanged()
 
     def formatChanged(self):
         if self.rbtnS8.isChecked():
@@ -366,6 +376,7 @@ class Window(QMainWindow, Ui_MainWindow):
         Frame.whiteThreshold = self.frame.getWhiteThreshold()
         self.sbWT.setValue(int(Frame.whiteThreshold))
         print(f"Setting white threshold to {Frame.whiteThreshold} from image")
+        self.modeChanged()
 
     def whiteThresholdApply(self):
         Frame.whiteThreshold = self.sbWT.value()
@@ -460,7 +471,7 @@ class Window(QMainWindow, Ui_MainWindow):
             if self.lblImage.isVisible():
                 self.lblImage.setPixmap(frame.getCropped())
             self.lblHoleCrop.setPixmap(frame.getHoleCrop())
-            self.lblHist.setPixmap(frame.getHistogram())
+            #self.lblHist.setPixmap(frame.getHistogram())
             #print(f"Resizing hist to {self.lblHist.size}")
             #self.lblHist.setPixmap(cv2.resize(frame.getHistogram(), (0,0), fx=0.5, fy=0.5))
             self.frame = frame
@@ -471,7 +482,7 @@ class Window(QMainWindow, Ui_MainWindow):
             if self.lblImage.isVisible():
                 self.lblImage.setPixmap(frame.getCropped())
             self.lblHoleCrop.setPixmap(frame.getHoleCrop())
-            self.lblHist.setPixmap(frame.getHistogram())
+            #self.lblHist.setPixmap(frame.getHistogram())
             self.frame = frame
 
     def cropStateChange(self, info, res):
@@ -552,7 +563,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.sbWT.setEnabled(frame)
         #self.pbtnLedPlus.setEnabled(scan)
         #self.pbtnLedMinus.setEnabled(scan)
-        self.pbtnApplyWT.setEnabled(frame)
+        #self.pbtnApplyWT.setEnabled(False)#frame)
         self.pbtnDetectWT.setEnabled(frame)
         #self.pbtnSetWT.setEnabled(idle and crop and frame)
         self.pbtnSpool.setEnabled(pi and (crop or scan))
@@ -582,6 +593,10 @@ class Window(QMainWindow, Ui_MainWindow):
             self.rbtnAutoEdge.setChecked(True)
         else:
             self.rbtnManEdge.setChecked(True)
+        if Frame.useThresh:
+            self.rbtnThresh.setChecked(True)
+        else:
+            self.rbtnHsv.setChecked(True)
         if picamera2_present:
             self.timer = QTimer()
             self.timer.timeout.connect(self.motorTimeout)
@@ -611,7 +626,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.lblScanFrame.setText(Film.scanFolder)
             else:
                 self.lblScanFrame.setText(self.frame.imagePathName)       
-            self.lblInfo1.setText(f"cX={frame.cX} cY={frame.cY} midy={frame.midy}")
+            self.lblInfo1.setText(f"rX={frame.rX} cY={frame.cY} midy={frame.midy}")
             if frame.sprocketSize is not None:
                 self.lblInfo2.setText(f"res={frame.locateHoleResult} sprocketSize={frame.sprocketSize}")
         else:
@@ -647,15 +662,15 @@ class Window(QMainWindow, Ui_MainWindow):
             self.prepLblImage()
             self.lblImage.setPixmap(self.frame.getQPixmap(self.scrollAreaWidgetContents) )
         self.lblHoleCrop.update()
-        if self.frame.histogram is not None:
-            self.lblHist.setPixmap(self.frame.getHistogram())
+        #if self.frame.histogram is not None:
+        #    self.lblHist.setPixmap(self.frame.getHistogram())
         
     def showCrop(self):
         self.prepLblImage()
         self.lblImage.setPixmap(self.frame.getCropOutline(self.scrollAreaWidgetContents) )
         self.lblHoleCrop.setPixmap(self.frame.getHoleCrop())
         #if self.frame.histogram is not None:
-        self.lblHist.setPixmap(self.frame.getHistogram())
+        #self.lblHist.setPixmap(self.frame.getHistogram())
 
     def showInfo(self,text):
         self.statusbar.showMessage(text)
@@ -887,7 +902,7 @@ class QThreadScan(QtCore.QThread):
 # =============================================================================
 
 if __name__ == "__main__":
-    safe = False
+    safe = True#False
     if safe:
         try:
             app = QApplication(sys.argv) 

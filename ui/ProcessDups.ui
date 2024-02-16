@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
+    <width>858</width>
     <height>600</height>
    </rect>
   </property>
@@ -27,7 +27,7 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>778</width>
+           <width>822</width>
            <height>435</height>
           </rect>
          </property>
@@ -158,6 +158,13 @@
            </property>
           </widget>
          </item>
+         <item>
+          <widget class="QPushButton" name="pbtnRename">
+           <property name="text">
+            <string>RenameAll</string>
+           </property>
+          </widget>
+         </item>
         </layout>
        </widget>
       </item>
@@ -170,7 +177,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>858</width>
      <height>22</height>
     </rect>
    </property>
