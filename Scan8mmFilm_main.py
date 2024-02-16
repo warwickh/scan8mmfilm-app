@@ -455,8 +455,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.frame.calcCrop()
         print("in capture_done")
         self.lblHoleCrop.setPixmap(self.frame.getHoleCrop())
-        #self.lblHist.setPixmap(cv2.resize(self.frame.getHistogram(), (0,0), fx=0.5, fy=0.5))
-        #self.lblHist.setPixmap(self.frame.getHistogram())
+        #self.lblHist.setPixmap(cv2.resize(self.frame.getMask(), (0,0), fx=0.5, fy=0.5))
+        self.lblHist.setPixmap(self.frame.getMask())
         self.updateInfoPanel()
         self.motorTicks = 0
         print("only the buttons to go")   
@@ -471,7 +471,7 @@ class Window(QMainWindow, Ui_MainWindow):
             if self.lblImage.isVisible():
                 self.lblImage.setPixmap(frame.getCropped())
             self.lblHoleCrop.setPixmap(frame.getHoleCrop())
-            #self.lblHist.setPixmap(frame.getHistogram())
+            self.lblHist.setPixmap(frame.getMask())
             #print(f"Resizing hist to {self.lblHist.size}")
             #self.lblHist.setPixmap(cv2.resize(frame.getHistogram(), (0,0), fx=0.5, fy=0.5))
             self.frame = frame
@@ -482,7 +482,7 @@ class Window(QMainWindow, Ui_MainWindow):
             if self.lblImage.isVisible():
                 self.lblImage.setPixmap(frame.getCropped())
             self.lblHoleCrop.setPixmap(frame.getHoleCrop())
-            #self.lblHist.setPixmap(frame.getHistogram())
+            self.lblHist.setPixmap(frame.getMask())
             self.frame = frame
 
     def cropStateChange(self, info, res):
@@ -663,14 +663,14 @@ class Window(QMainWindow, Ui_MainWindow):
             self.lblImage.setPixmap(self.frame.getQPixmap(self.scrollAreaWidgetContents) )
         self.lblHoleCrop.update()
         #if self.frame.histogram is not None:
-        #    self.lblHist.setPixmap(self.frame.getHistogram())
+        self.lblHist.setPixmap(self.frame.getMask())
         
     def showCrop(self):
         self.prepLblImage()
         self.lblImage.setPixmap(self.frame.getCropOutline(self.scrollAreaWidgetContents) )
         self.lblHoleCrop.setPixmap(self.frame.getHoleCrop())
         #if self.frame.histogram is not None:
-        #self.lblHist.setPixmap(self.frame.getHistogram())
+        self.lblHist.setPixmap(self.frame.getMask())
 
     def showInfo(self,text):
         self.statusbar.showMessage(text)
