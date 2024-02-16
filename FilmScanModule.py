@@ -241,7 +241,7 @@ class Frame:
     edgeDetection = 'auto'
     filmEdge = 200
     hsvMargin = 70
-    useThresh = True
+    useThresh = False#use hsv
     #ratioX1 = 385
     #ratioX2 = 564
     edgeAuto = True
@@ -348,7 +348,12 @@ class Frame:
             return QtGui.QPixmap.fromImage(im)
         
     def getQPixmap(self, dest=None):
-        return self.convert_cv_qt(self.image, dest)
+        if Frame.edgeAuto:
+            wp1 = (round(self.holeCrop.x1*self.ScaleFactor), 0)
+            wp2 = (round(self.holeCrop.x2*self.ScaleFactor), self.dy)
+            cv2.rectangle(self.markup, wp1, wp2, (255, 0, 0), 3)
+            print(f"holecrop rectangle {wp1} {wp2}")
+        return self.convert_cv_qt(self.markup, dest)
         
     def getCropped(self, dest=None):
         ScaleFactor = int(self.ScaleFactor)
@@ -407,6 +412,7 @@ class Frame:
         wp1 = (round(Frame.filmPlate.x1), round(Frame.filmPlate.y1))
         wp2 = (round(Frame.filmPlate.x2), round(Frame.filmPlate.y2))
         cv2.rectangle(self.markup, wp1, wp2, (0, 0, 255), 5)
+        #cv2.imwrite(os.path.expanduser("~/markup.png"), self.markup)
         return self.convert_cv_qt(self.markup, dest)
         
     def cropPic(self):
@@ -722,17 +728,15 @@ class Frame:
 
     def findSprocketLeft(self):
         foundLeftEdge = self.findLeftEdge()
-        #if Frame.format == 's8':
-        #    lX = int(Frame.s8_lX * self.ScaleFactor)
-        #else:
-        #    lX = int(Frame.r8_lX * self.ScaleFactor)
-        #if not foundLeftEdge:
-        #    self.fil
         returnlX = self.lX
+        if not foundLeftEdge:
+            print(f"Using old lX value {returnlX} because can't find film edge")
+            return returnlX
+        print(f"Starting search with lX {self.lX}")
         filmEdge = self.filmEdge
         print(f"Using film edge {self.filmEdge}")
         searchRange = self.stdSprocketWidth*1.2#450 #may need to adjust with image size
-        ratioThresh = 0.1 #may need to adjust with film format
+        ratioThresh = 0.2#0.1 #may need to adjust with film format
         step = int(10*self.ScaleFactor) #increase for faster
         searchStart = int(filmEdge+(0.015*self.dx))#buffer for rough edge
         searchEnd = int(searchStart+searchRange)
