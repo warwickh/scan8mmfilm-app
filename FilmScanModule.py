@@ -283,6 +283,7 @@ class Frame:
             #self.threshImgPath = "whitethresh.png"
         self.dy,self.dx,_ = self.image.shape
         self.ScaleFactor = self.dx/640.0
+        self.markup = self.image.copy()
         print(f"Scalefactor {Frame.ScaleFactor}")
         if Frame.format == "s8":
             print(f"Checking {Frame.s8_stdSprocketWidth}")
@@ -394,31 +395,26 @@ class Frame:
     def getCropOutline(self, dest=None):
         self.calcCrop()
         if True:# Frame.analysisType!='ratio':
-            cv2.rectangle(self.image, self.p1, self.p2, (0, 255, 0), 10)
+            cv2.rectangle(self.markup, self.p1, self.p2, (0, 255, 0), 10)
             wp1 = (round(self.rX+self.whiteCrop.x1), round(self.cY+self.whiteCrop.y1))
             wp2 = (round(self.rX+self.whiteCrop.x2), round(self.cY+self.whiteCrop.y2))
-            cv2.rectangle(self.image, wp1, wp2, (60, 240, 240), 10)
+            cv2.rectangle(self.markup, wp1, wp2, (60, 240, 240), 10)
         if True:#not Frame.edgeAuto:
             wp1 = (round(self.holeCrop.x1*self.ScaleFactor), 0)
             wp2 = (round(self.holeCrop.x2*self.ScaleFactor), self.dy)
-            cv2.rectangle(self.image, wp1, wp2, (255, 0, 0), 3)
+            cv2.rectangle(self.markup, wp1, wp2, (255, 0, 0), 3)
             print(f"holecrop rectangle {wp1} {wp2}")
         wp1 = (round(Frame.filmPlate.x1), round(Frame.filmPlate.y1))
         wp2 = (round(Frame.filmPlate.x2), round(Frame.filmPlate.y2))
-        cv2.rectangle(self.image, wp1, wp2, (0, 0, 255), 5)
-        return self.convert_cv_qt(self.image, dest)
+        cv2.rectangle(self.markup, wp1, wp2, (0, 0, 255), 5)
+        return self.convert_cv_qt(self.markup, dest)
         
     def cropPic(self):
         self.calcCrop()
         self.imageCropped = self.image[self.p1[1]:self.p2[1], self.p1[0]:self.p2[0]]
      
-    def getWhiteThreshold(self, threshFilename=None):
-        if threshFilename:
-            print(f"Checking for threshold file at {threshFilename} {os.path.exists(threshFilename)}")
-            img = cv2.imread(threshFilename)
-        else:
-            #img = self.image[Frame.whiteCrop.y1:Frame.whiteCrop.y2, Frame.whiteCrop.x1:Frame.whiteCrop.x2]
-            img = self.image[int(self.cY+self.whiteCrop.y1):int(self.cY+self.whiteCrop.y2),int(self.rX+self.whiteCrop.x1):int(self.rX+self.whiteCrop.x2)]
+    def getWhiteThreshold(self):
+        img = self.image[int(self.cY+self.whiteCrop.y1):int(self.cY+self.whiteCrop.y2),int(self.rX+self.whiteCrop.x1):int(self.rX+self.whiteCrop.x2)]
         dy,dx,_ = img.shape
         #img = imageSmall[self.whiteCrop.y1:self.whiteCrop.y2, self.whiteCrop.x1:self.whiteCrop.x2]
         cv2.imwrite(os.path.expanduser("~/detectWT.png"), img)
@@ -434,12 +430,12 @@ class Frame:
             if hist[i] > okPct :
                 wco = i-8 #6
                 break
-        print(f"Found threshold {wco} from {threshFilename}")
+        print(f"Found threshold {wco}")
         return wco     
 
     def locateSprocketHole(self):
         print(f"Locating sprocket hole using {Frame.analysisType}")
-        cv2.imwrite(os.path.expanduser("~/locate_image.png"), self.image)
+        #cv2.imwrite(os.path.expanduser("~/locate_image.png"), self.image)
         print(f" lX {self.lX} rx {self.rX}")
         currentAnalysisType = Frame.analysisType
         #refreshed = False
@@ -612,6 +608,7 @@ class Frame:
             x2 = x1+int(self.stdSprocketWidth*0.8)
         
         self.imageHoleCrop = self.image[:,int(x1):int(x1+2*(x2-x1)),:].copy()
+        #self.imageHoleCrop = self.markup[:,int(x1):int(x1+2*(x2-x1)),:]#.copy()
         print(self.mask.shape)
         #self.imageHoleCropHide = self.mask[:,int(x1):int(x2),:]
         self.imageHoleCropHide = self.mask[:,int(x1):int(x2)]
@@ -675,10 +672,10 @@ class Frame:
         cv2.line(self.imageHoleCrop, p1, p2, (255, 255, 255), 3) # white line
         #self.imageHoleCrop = cv2.resize(self.imageHoleCrop, (0,0), fx=1/self.ScaleFactor, fy=1/self.ScaleFactor)
         cv2.imwrite(os.path.expanduser("~/ratiosprocketStrip.png"), self.imageHoleCrop)
-        cv2.imwrite(os.path.expanduser("~/ratioimage.png"), self.image)
+        #cv2.imwrite(os.path.expanduser("~/ratioimage.png"), self.image)
         return locateHoleResult
 
-    def findLeftEdge(self):
+    def findLeftEdge(self):#assumes dark area
         filmEdge = self.filmEdge
         searchRange = self.stdSprocketWidth*1.2#450 #may need to adjust with image size
         filmEdgeTrigger = 0.01
@@ -692,14 +689,14 @@ class Frame:
             print(f"x {x1} ratio {ratio} {np.sum(strip == 255)} dx {self.dx*step}")
             p1 = (int(x1), int(0)) 
             p2 = (int(x1), int(self.dy)) 
-            cv2.line(self.image, p1, p2, (128, 128, 128), 1) #grey to film edge
+            cv2.line(self.markup, p1, p2, (128, 128, 128), 1) #grey to film edge
             if ratio<filmEdgeTrigger:
                 print(f"Found edge at {x1} with ratio {ratio}")
                 filmEdge=x1
                 self.filmEdge = filmEdge
                 p1 = (int(x1), int(0)) 
                 p2 = (int(x1), int(self.dy)) 
-                cv2.line(self.image, p1, p2, (255, 0, 0), 2) #Vert
+                cv2.line(self.markup, p1, p2, (255, 0, 0), 2) #Vert
                 return True
         print(f"Film edge not found returning filmEdge {self.filmEdge}")
         return False
@@ -707,14 +704,14 @@ class Frame:
 #=========================================================================
     
     def getMaskedImage(self):#, x1, x2):
-        localImg =  self.image.copy()#[:,int(x1):int(x2),:].copy()
+        #localImg =  self.image.copy()#[:,int(x1):int(x2),:].copy()
         if Frame.useThresh:
-            img = cv2.cvtColor(localImg, cv2.COLOR_BGR2GRAY)
+            img = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
             print(f"Checking white threshold before use {Frame.whiteThreshold}")
             ret, self.mask = cv2.threshold(img, Frame.whiteThreshold, 255, 0)
             cv2.imwrite(os.path.expanduser("~/mask_thresh.png"), self.mask)
         else:
-            img = cv2.cvtColor(localImg, cv2.COLOR_BGR2HSV)
+            img = cv2.cvtColor(self.image, cv2.COLOR_BGR2HSV)
             lower = np.array([0, 0, 255-Frame.hsvMargin], dtype="uint8")
             upper = np.array([255, Frame.hsvMargin, 255], dtype="uint8")
             print(f"hsv lower {lower} upper {upper}")
@@ -748,7 +745,7 @@ class Frame:
             #print(f"x {x1} ratio {ratio} {np.sum(strip == 255)} dx {self.dy*step}")
             p1 = (int(x1), int(0)) 
             p2 = (int(x1), int(self.dy)) 
-            cv2.line(self.image, p1, p2, (255, 255, 255), 3) #Vert
+            cv2.line(self.markup, p1, p2, (255, 255, 255), 3) #Vert
             if ratio>ratioThresh and filmEdge:
                 #cv2.imwrite(os.path.expanduser("~/testx.png"), self.image)
                 returnlX = x1+(step/2)
@@ -777,7 +774,7 @@ class Frame:
         maxPeakValueH   = smoothedHori.max()
         thresholdHori   = self.innerThresh*maxPeakValueH
         cv2.imwrite(os.path.expanduser("~/hori.png"), horizontalStrip)
-        cv2.imwrite(os.path.expanduser("~/rXimage.png"), self.image)
+        #cv2.imwrite(os.path.expanduser("~/rXimage.png"), self.image)
         #cv2.imwrite(os.path.expanduser("~/horicheck.png"), self.image[int(ry1):int(ry2),int(rx1):int(rx2),:])#self.image[0:1858,456:848,:])
         plt.plot(smoothedHori)
         plt.axhline(thresholdHori, color='cyan', linewidth=1)
