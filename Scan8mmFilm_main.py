@@ -467,6 +467,8 @@ class Window(QMainWindow, Ui_MainWindow):
     def scanProgress(self, info, i, frame ):
         self.lblScanInfo.setText(info)
         self.motorTicks = 0   
+        Frame.whiteThreshold = frame.getWhiteThreshold()
+        #self.sbWT.setValue(int(Frame.whiteThreshold))
         if frame is not None:
             if self.lblImage.isVisible():
                 self.lblImage.setPixmap(frame.getCropped())
@@ -475,7 +477,14 @@ class Window(QMainWindow, Ui_MainWindow):
             #print(f"Resizing hist to {self.lblHist.size}")
             #self.lblHist.setPixmap(cv2.resize(frame.getHistogram(), (0,0), fx=0.5, fy=0.5))
             self.frame = frame
-
+            tolerance = 10
+            midy = self.frame.midy
+            currentcY = self.frame.cY#//self.frame.ScaleFactor
+            tolerance = 10*self.frame.ScaleFactor
+            if (currentcY <= midy + tolerance) and (currentcY >= midy - tolerance):
+                print(f"Updating thresh at {abs(currentcY - midy)} dist")
+                Frame.whiteThreshold = frame.getWhiteThreshold()
+                
     def cropProgress(self, info, i, frame):
         self.lblCropInfo.setText(info)
         if frame is not None:
@@ -781,7 +790,7 @@ class QThreadScan(QtCore.QThread):
         self.film = film
         self.cmd = 1 # run 
         self.midy = None#self.frame.midy #TODO switch to per frame setting
-        self.tolerance = 30
+        self.tolerance = 10
         self.pixelsPerStep = 2.5
         self.parent = parent
         self.frameNo = Film.getFileCount(Film.scanFolder)

@@ -241,7 +241,7 @@ class Frame:
     edgeDetection = 'auto'
     filmEdge = 200
     hsvMargin = 70
-    useThresh = False#use hsv
+    useThresh = True
     #ratioX1 = 385
     #ratioX2 = 564
     edgeAuto = True
@@ -501,12 +501,12 @@ class Frame:
         return True
 
     def isSprocketStart(self, location, size=50):
-        print(f"mask size {self.mask.shape} location {location} size {size}")
+        print(f"mask size {self.imageHoleCropHide.shape} location {location} size {size}")
         if not size<location<(self.dy-size):
             print(f"Too close to edge at {location} so returning true")
             return True #If close to edge assume start - we don't trust these anyway
-        stripDn = self.mask[location:location+size+5,:,]
-        stripUp = self.mask[location-size:location,:,]
+        stripDn = self.imageHoleCropHide[location:location+size+5,:,]
+        stripUp = self.imageHoleCropHide[location-size:location,:,]
         print(f"stripup {stripUp.shape} stripdn {stripDn.shape}")
         cv2.imwrite(os.path.expanduser("~/stripup.png"), stripUp)
         cv2.imwrite(os.path.expanduser("~/stripdn.png"), stripDn)
@@ -558,7 +558,7 @@ class Frame:
                             for i in range(len(testPeaks)):#sprocket/gap fup/down from current peak test for correct
                                 if testPeaks[i]>0: 
                                     #for testPeak in testPeaks:
-                                    testRange = 0.1
+                                    testRange = 0.08
                                     upper = testPeaks[i]+(self.dy*testRange)
                                     lower = testPeaks[i]-(self.dy*testRange)
                                     #plt.axvline(testPeak, color='red', linewidth=1,label=f"testPeak")
@@ -590,7 +590,7 @@ class Frame:
                             #print(f"sprocketCentre {sprocketCentre}")
                             dist = abs((self.midy-sprocketCentre)/self.dy)
                             print(f"{valueSet} sprocketstart {sprocketStart} sprocketEnd {sprocketEnd} sprocketSize {sprocketHeight} dist {dist:02f}")  
-                            if dist<0.3:
+                            if self.minSprocketHeight<sprocketHeight and sprocketHeight<self.maxSprocketHeight and dist<0.3:
                                 print(f"Found sprocket in range at {valueSet}")
                                 plt.savefig(os.path.expanduser("~/findsprocket.png"))
                                 plt.clf()
@@ -768,7 +768,7 @@ class Frame:
         rx2 = x1 + 1.5*self.stdSprocketWidth
         #rx2 = x1 + 2*self.self.stdSprocketWidth
         ry = int(0.8*sprocketHeight)
-        ry1 = cY-ry//2
+        ry1 = max(0,(cY-ry//2))
         ry2 = cY+ry//2
         print(f"strip dimensions format {self.format} ry1 {ry1} ry2 {ry2} rx1 {rx1} rx2 {rx2} - cY {cY} shape {self.image.shape}")
         horizontalStrip = self.image[int(ry1):int(ry2),int(rx1):int(rx2),:]
@@ -788,8 +788,10 @@ class Frame:
         for x in range(int((x2-x1)//2),len(smoothedHori)):
             if smoothedHori[x]<thresholdHori:
                 triggered = True
+                #print("triggered")
             if smoothedHori[x]>thresholdHori and triggered:         
-                rX = x+rx1             
+                rX = x+rx1
+                print(f"detected right edge at {rX}")             
                 return rX
         return 0 
 
