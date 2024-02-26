@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os, fnmatch
+import re
 import cv2
 import random
 import glob
@@ -188,13 +189,18 @@ class Rect:
     
     def adjX(self, adj):
         #if self.x1 + adj >= 0 :
+        print(f"Adjusting {self.name} in x by {adj}")
         self.x1 = self.x1 + adj
         self.x2 = self.x2 + adj
+        if self.getXSize()%2 != 0:
+            self.x2 = self.x2 - 1
 
     def adjY(self, adj):
         #if self.y1 + adj >= 0 :
         self.y1 = self.y1 + adj
         self.y2 = self.y2 + adj
+        if self.getYSize()%2 != 0:
+            self.y2 = self.y2 - 1
         
     def adjXSize(self, adj):
         if self.x2 + adj > self.x1 :
@@ -444,8 +450,9 @@ class Frame:
         #cv2.imwrite(os.path.expanduser("~/locate_image.png"), self.image)
         print(f" lX {self.lX} rx {self.rX}")
         currentAnalysisType = Frame.analysisType
-        #refreshed = False
-        refreshed = self.refreshBounds()
+        refreshed = False
+        #refreshed = self.refreshBounds()
+        self.mask = self.getMaskedImage()
         if currentAnalysisType == 'auto':
             currentAnalysisType = 'thresh'
         while currentAnalysisType is not None:
@@ -482,16 +489,16 @@ class Frame:
         
     def updateHoleCrop(self):
         if Frame.format == 's8':
-            Frame.s8_lX = self.lX // self.ScaleFactor
-            Frame.s8_rX = self.rX // self.ScaleFactor
-            Frame.s8_holeCrop.x1 = self.lX // self.ScaleFactor
-            Frame.s8_holeCrop.x2 = self.rX // self.ScaleFactor
+            Frame.s8_lX = int(self.lX // self.ScaleFactor)
+            Frame.s8_rX = int(self.rX // self.ScaleFactor)
+            Frame.s8_holeCrop.x1 = int(self.lX // self.ScaleFactor)
+            Frame.s8_holeCrop.x2 = int(self.rX // self.ScaleFactor)
             self.holeCrop = Frame.s8_holeCrop
         else:
-            Frame.r8_lX = self.lX // self.ScaleFactor
-            Frame.r8_rX = self.rX // self.ScaleFactor
-            Frame.r8_holeCrop.x1 = self.lX // self.ScaleFactor
-            Frame.r8_holeCrop.x2 = self.rX // self.ScaleFactor
+            Frame.r8_lX = int(self.lX // self.ScaleFactor)
+            Frame.r8_rX = int(self.rX // self.ScaleFactor)
+            Frame.r8_holeCrop.x1 = int(self.lX // self.ScaleFactor)
+            Frame.r8_holeCrop.x2 = int(self.rX // self.ScaleFactor)
             self.holeCrop = Frame.r8_holeCrop
 
     def refreshBounds(self):
@@ -1049,8 +1056,9 @@ class Film:
         fileList = sorted(glob.glob('*.jpg'))
         self.scanFileCount = len(fileList)
         for fn in fileList:
-            print(f"Cropping {fn}")
-            outFileName = os.path.join(Film.cropFolder, f"frame{frameNo:06}.jpg")
+            outFileName = os.path.join(Film.cropFolder, re.sub('scan', 'frame',fn,count=1))#Use original numbering for now
+            print(f"Cropping {fn} to {outFileName}")
+            #outFileName = os.path.join(Film.cropFolder, f"frame{frameNo:06}.jpg")
             if not os.path.isfile(outFileName):
                 frame = Frame(os.path.join(Film.scanFolder, fn))
                 frame.cropPic()
