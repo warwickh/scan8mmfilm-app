@@ -218,7 +218,7 @@ class Frame:
     s8_holeCrop = Rect("s8_hole_crop", 385, 0, 564, 0) 
     s8_whiteCrop = Rect("s8_white_crop", -185, -109, -27, 122)
     s8_stdSprocketHeight = 0.13
-    s8_stdSprocketWidth = 0.05
+    s8_stdSprocketWidth = 0.055
     #s8_midx = 64
     s8_midy = 240
     r8_frameCrop = Rect("r8_frame_crop", 15, 11, 1383, 1022)
@@ -560,7 +560,6 @@ class Frame:
                             peak-self.stdSprocketHeight*self.ratio-self.stdSprocketHeight]
                             #print(f"testpeaks {testPeaks}")
                             valueSet = [peak]
-                            sprockets = []
                             sprocketStart = None
                             isSprocketStart = self.isSprocketStart(peak)
                             for i in range(len(testPeaks)):#sprocket/gap fup/down from current peak test for correct
@@ -579,46 +578,35 @@ class Frame:
                                                 if self.isSprocketStart(loc):
                                                     sprocketStart = loc
                                                     sprocketEnd = peak
-                                                    sprocket = self.calcSprocket(sprocketStart,sprocketEnd)
-                                                    sprockets.append(sprocket)
                                             elif i == 1:
                                                 sprocketStart = testPeaks[0]
                                                 sprocketEnd = peak
-                                                sprocket = self.calcSprocket(sprocketStart,sprocketEnd)
-                                                sprockets.append(sprocket)
                                             elif i == 2:
                                                 sprocketEnd = loc
                                                 sprocketStart = loc-self.stdSprocketHeight
-                                                sprocket = self.calcSprocket(sprocketStart,sprocketEnd)
-                                                sprockets.append(sprocket)
-                                                sprocketEnd = peak
-                                                sprocketStart = peak-self.stdSprocketHeight
-                                                sprocket = self.calcSprocket(sprocketStart,sprocketEnd)
-                                                sprockets.append(sprocket)
                                             valueSet.append(loc)
                                         else:
                                             print(f"Failed peak {peak} testPeak {i} {testPeaks[i]} loc {loc} not within {lower} {upper} so fail")
                         print(f"finished testing for {peaks} at {z} got {valueSet} sprocketstart {sprocketStart} sprocketEnd {sprocketEnd} =========================================")          
-                        for sprocket in sprockets:
-                            if self.minSprocketHeight<sprocket['sprocketHeight'] and \
-                                sprocket['sprocketHeight']<self.maxSprocketHeight and sprocket['dist']<0.3:
-                                print(f"sprocketstart {sprocket['sprocketStart']} sprocketEnd {sprocket['sprocketEnd']} sprocketSize {sprocket['sprocketHeight']} dist {sprocket['dist']:02f}")  
+                        if len(valueSet)>1 and sprocketStart:
+                            valueSet.sort()   
+                            print(f"Got enough matching vals at {valueSet} sprocketstart {sprocketStart}")
+                            #sprocketEnd = valueSet[valueSet.index(sprocketStart)+1]#TODO crashing here when peak is too low ValueError: 14 is not in list
+                            sprocketHeight = sprocketEnd - sprocketStart
+                            sprocketCentre = sprocketStart+0.5*sprocketHeight
+                            #print(f"sprocketCentre {sprocketCentre}")
+                            dist = abs((self.midy-sprocketCentre)/self.dy)
+                            print(f"{valueSet} sprocketstart {sprocketStart} sprocketEnd {sprocketEnd} sprocketSize {sprocketHeight} dist {dist:02f}")  
+                            if self.minSprocketHeight<sprocketHeight and sprocketHeight<self.maxSprocketHeight and dist<0.3:
+                                print(f"Found sprocket in range at {valueSet}")
                                 plt.savefig(os.path.expanduser("~/findsprocket.png"))
                                 plt.clf()
-                                return sprocket['sprocketStart'], sprocket['sprocketHeight']
+                                return sprocketStart, sprocketHeight
                         else:
                             plt.savefig(os.path.expanduser(f"~/findsprocketfail.png"))
                             plt.clf()
                                 
         return None, None
-    
-    def calcSprocket(self, sprocketStart, sprocketEnd):
-        sprocketHeight = sprocketEnd - sprocketStart
-        sprocketCentre = sprocketStart+0.5*sprocketHeight
-        dist = abs((self.midy-sprocketCentre)/self.dy)
-        sprocket = {'sprocketStart':sprocketStart, 'sprocketEnd':sprocketEnd, 'sprocketHeight':sprocketHeight, 'sprocketCentre':sprocketCentre,'dist':dist }
-        print(f"Got a sprocket {sprocket}")
-        return sprocket                                        
     
     def locateSprocketHoleRatio(self):
         filterSize = 25                 # smoothing kernel - leave it untouched
@@ -755,7 +743,7 @@ class Frame:
         filmEdge = self.filmEdge
         print(f"Using film edge {self.filmEdge}")
         searchRange = self.stdSprocketWidth*1.2#450 #may need to adjust with image size
-        ratioThresh = 0.15#2#0.1 #may need to adjust with film format
+        ratioThresh = 0.2#0.1 #may need to adjust with film format
         step = int(10*self.ScaleFactor) #increase for faster
         searchStart = int(filmEdge+(0.015*self.dx))#buffer for rough edge
         searchEnd = int(searchStart+searchRange)
