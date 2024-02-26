@@ -1129,4 +1129,3 @@ class Film:
         self.progressReport("Process finished.")
         self.filmDone()
         self.p = None        
-
