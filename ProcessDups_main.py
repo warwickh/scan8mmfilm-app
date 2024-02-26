@@ -33,8 +33,9 @@ class Window(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setupUi(self)
-        self.currentLimit = 0.993
-        #self.currentLimit = 0.077
+        self.currentUpper = 0.993
+        self.currentLower = 0.8
+        #self.currentLimit = 0
         self.resultType = 'similarity'
         self.similarity=0
         self.currentImg = 1
@@ -50,13 +51,14 @@ class Window(QMainWindow, Ui_MainWindow):
         self.feature_model_vgg = Model(inputs=model.input,outputs=model.get_layer(layer_name).output)
         self.feature_model_resnet = ResNet50(input_tensor=image_input, include_top=False,weights='imagenet')
         self.loaded = False
-        self.cropFolder = os.path.expanduser("~/scanframes/crop/roll8")
+        self.cropFolder = os.path.expanduser("~/scanframes/crop/roll11")
         self.resultPath = os.path.join(self.cropFolder,"dup_results.csv")
+        self.dsbUpper.setValue(self.currentUpper)
+        self.dsbLower.setValue(self.currentLower)
         self.connectSignalsSlots()
         self.doLblImagePrep = False
         self.swapTimer = QTimer()
         self.swapTimer.timeout.connect(self.swap)
-        self.dsbLimit.setValue(self.currentLimit)
         self.updateInfoPanel()
         QTimer.singleShot(100, self.initData)
 
@@ -67,8 +69,13 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.doClose()
                 return
         print(f"Starting at {self.cropFolder}")
-        self.resultPath = os.path.join(self.cropFolder,"dup_results.csv")
+        self.dupResultPath = os.path.join(self.cropFolder,"dup_results.csv")
+        self.errResultPath = os.path.join(self.cropFolder,"err_results.csv")
         self.createDupLog(self.cropFolder)
+        if self.rbtnDup.isChecked():
+            self.modeChanged() # was set - force action
+        else:
+            self.rbtnDup.setChecked(True) 
 
     def selectCropFolder(self, *, text="Select Crop Folder", init=True):
         dir = QtWidgets.QFileDialog.getExistingDirectory(caption=text, directory=os.path.commonpath([self.cropFolder]))
@@ -88,7 +95,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnSkip.clicked.connect(self.skip)
         self.pbtnDelete.clicked.connect(self.delete)
         self.pbtnRename.clicked.connect(self.rename)
-        self.dsbLimit.valueChanged.connect(self.limitChanged)
+        self.dsbUpper.valueChanged.connect(self.limitChanged)
+        self.dsbLower.valueChanged.connect(self.limitChanged)
         self.pbtnDup.setEnabled(False)
         self.pbtnNotDup.setEnabled(False)
         self.pbtnDelete.setEnabled(False)
@@ -97,6 +105,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnStart.setEnabled(False)
         self.pbtnSwap.setEnabled(False)
         self.pbtnSkip.setEnabled(False)
+        self.pbtnTagError.setEnabled(True)
+        self.rbtnDup.toggled.connect(self.modeChanged)
 
     def updateInfoPanel(self):
         self.lblInfo.setText(f"Current frame {self.currentImg} {self.img2pth} {self.similarity:03f} logged {len(self.results)}")
@@ -105,7 +115,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.lblInfo.setText(f"{self.currentFrame}/{self.frameCount} {self.currentFrameName} {self.similarity:03f}")
 
     def limitChanged(self):
-        self.currentLimit = self.dsbLimit.value()
+        self.currentUpper = self.dsbUpper.value()
+        self.currentLower = self.dsbLower.value()
         self.updateInfoPanel()
 
     def load_image(self, img_path):
@@ -163,7 +174,9 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.similarity = float(self.currentRow[self.resultType])#TODO
                 self.updateInfoPanel()
                 print(f"{self.img1pth} {self.img2pth} {self.similarity}")
-                if self.similarity>=self.currentLimit:
+                if self.rbtnDup.isChecked() and self.similarity>=self.currentUpper:
+                    return True
+                elif self.rbtnScene.isChecked() and self.similarity<=self.currentLower:
                     return True
             else:
                 return False
@@ -177,6 +190,13 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnDup.setEnabled(True)
         self.pbtnNotDup.setEnabled(True)
         
+    def error(self):
+        result = {'img1':self.img1pth, 'img2':self.img2pth, 'similarity': self.similarity, 'isDup': False, 'isError': True}
+        self.results.append(result)
+        self.saveRow(result)
+        if self.getNextImages():
+            self.loadLblImage(self.img1)
+            self.updateInfoPanel()
 
     def delete(self):
         self.pbtnDelete.setEnabled(False)
@@ -187,6 +207,17 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnRename.setEnabled(False)
         self.renameAll(self.cropFolder)
         self.pbtnRename.setEnabled(True)
+
+    def modeChanged(self):
+        self.prepLblImage()
+        if self.rbtnDup.isChecked():
+            #self.showInfo("Mode Dup")
+            print("Mode Dup")
+            #self.currentLimit = self.currentUpper
+        else:
+            #self.showInfo("Mode Scene")
+            print("Mode Scene")
+            #self.currentLimit = self.currentLower
 
     def swap(self):
         if self.currentImg==2:

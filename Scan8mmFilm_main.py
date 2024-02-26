@@ -320,9 +320,9 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.showHoleCrop()
         else:
             if self.rbtnPosition.isChecked() :
-                self.adjustableRects[self.adjRectIx].adjY(10)
+                self.adjustableRects[self.adjRectIx].adjY(2)
             else:
-                self.adjustableRects[self.adjRectIx].adjYSize(10)
+                self.adjustableRects[self.adjRectIx].adjYSize(2)
             self.refreshFrame() 
             self.showAdjustValues()
             
@@ -337,32 +337,33 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.showHoleCrop()
         else:
             if self.rbtnPosition.isChecked() :
-                self.adjustableRects[self.adjRectIx].adjY(-10)
+                self.adjustableRects[self.adjRectIx].adjY(-2)
             else:
-                self.adjustableRects[self.adjRectIx].adjYSize(-10)
+                self.adjustableRects[self.adjRectIx].adjYSize(-2)
             self.refreshFrame()
             self.showAdjustValues()
             
     def left(self):
         if self.rbtnCrop.isChecked():
             if self.rbtnPosition.isChecked() :
-                self.adjustableRects[self.adjRectIx].adjX(-10)
+                self.adjustableRects[self.adjRectIx].adjX(-2)
             else:
-                self.adjustableRects[self.adjRectIx].adjXSize(-10)
+                self.adjustableRects[self.adjRectIx].adjXSize(-2)
             self.refreshFrame()
             self.showAdjustValues()
             
     def right(self):
         if self.rbtnCrop.isChecked():
             if self.rbtnPosition.isChecked() :
-                self.adjustableRects[self.adjRectIx].adjX(10)
+                self.adjustableRects[self.adjRectIx].adjX(2)
             else:
-                self.adjustableRects[self.adjRectIx].adjXSize(10)
+                self.adjustableRects[self.adjRectIx].adjXSize(2)
             self.refreshFrame()
             self.showAdjustValues()
 
     def adjustableRectChanged(self, i):
         self.adjRectIx = i
+        print(f"Switching adjrect to {i}")
         self.showAdjustValues()
 
     def analysisTypeChanged(self, i):
@@ -493,6 +494,13 @@ class Window(QMainWindow, Ui_MainWindow):
             self.lblHoleCrop.setPixmap(frame.getHoleCrop())
             self.lblHist.setPixmap(frame.getMask())
             self.frame = frame
+            tolerance = 10
+            midy = self.frame.midy
+            currentcY = self.frame.cY#//self.frame.ScaleFactor
+            tolerance = 10*self.frame.ScaleFactor
+            if (currentcY <= midy + tolerance) and (currentcY >= midy - tolerance):
+                print(f"Updating thresh at {abs(currentcY - midy)} dist")
+                Frame.whiteThreshold = frame.getWhiteThreshold()
 
     def cropStateChange(self, info, res):
         self.updateInfoPanel()        
@@ -646,6 +654,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def showAdjustValues(self):
         rect = self.adjustableRects[self.adjRectIx]
+        print(f"Current rect is {rect.name}")
         ar = "" if self.adjRectIx != 0 else f"aspect ratio={rect.getXSize()/rect.getYSize():.2f}" 
         self.statusbar.showMessage(f"Adjusted: {rect.name} x1={rect.x1} y1={rect.y1}  x2={rect.x2} y2={rect.y2} width={rect.x2-rect.x1} height={rect.y2-rect.y1} {ar}")
     
