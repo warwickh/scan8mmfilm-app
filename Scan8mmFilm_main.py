@@ -871,8 +871,8 @@ class QThreadScan(QtCore.QThread):
                     firstAdj = False
 
                 elif currentcY < self.midy - tolerance:
-                    if firstAdj and currentcY < self.midy - 3*tolerance:
-                        pidevi.stepCw(40)
+                    if firstAdj and currentcY < self.midy - 2*tolerance:
+                        pidevi.stepCw(self.film.stepsPrFrame*0.75)
                     else:
                         self.sigProgress.emit(f"{self.frameNo} adjusting down", self.frameNo, self.frame)  
                         print(f"{currentcY} higher than {self.midy} so Moving down {abs(currentcY-self.midy)} pixels {tolstep} steps")
@@ -891,7 +891,7 @@ class QThreadScan(QtCore.QThread):
                     self.saveFrame() 
                     print(f"cY {currentcY} midy {self.midy} tol {tolerance} =========================================================")  
                     #self.motorStart()
-                    pidevi.spoolFwd(0.15)
+                    pidevi.spoolFwd(1)#0.15)
                     release = True
                     pidevi.stepCw(self.film.stepsPrFrame)
                     self.frameNo += 1

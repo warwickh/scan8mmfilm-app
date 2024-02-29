@@ -502,6 +502,7 @@ class Frame:
             self.holeCrop = Frame.r8_holeCrop
 
     def refreshBounds(self):
+        Frame.whiteThreshold = 220
         self.mask = self.getMaskedImage()
         self.lX = self.findSprocketLeft()
         self.updateHoleCrop()
@@ -540,7 +541,7 @@ class Frame:
         sprocketStart = None
         sprocketEnd = None
         sprocketHeight = None
-        for z in range(int(maxPeakValue*0.6),int(maxPeakValue*0.2),min(1,int(-0.2*(maxPeakValue-minPeakValue)))):
+        for z in range(int(maxPeakValue*0.8),int(maxPeakValue*0.2),min(1,int(-0.2*(maxPeakValue-minPeakValue)))):
             #plt.axhline(z, color='blue', linewidth=1)
             peaks = []
             for y in range(y1,y2):

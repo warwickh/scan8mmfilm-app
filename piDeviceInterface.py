@@ -153,7 +153,7 @@ def stepCw(steps):
     #delay = 0.005
     print(f"steps cw {steps} delay {delay}")
     GPIO.output(DIR, CW)
-    for x in range(steps):
+    for x in range(int(steps)):
         #Timer(delay, stepHigh).start()
         GPIO.output(STEP, GPIO.HIGH)
         sleep(delay)
@@ -164,7 +164,7 @@ def stepCcw(steps):
     #delay = 0.005
     print(f"steps ccw {steps} delay {delay}")
     GPIO.output(DIR, CCW)
-    for x in range(steps):
+    for x in range(int(steps)):
         #Timer(delay, stepHigh).start()
         GPIO.output(STEP, GPIO.HIGH)
         sleep(delay)
