@@ -218,7 +218,7 @@ class Frame:
     s8_holeCrop = Rect("s8_hole_crop", 385, 0, 564, 0) 
     s8_whiteCrop = Rect("s8_white_crop", -185, -109, -27, 122)
     s8_stdSprocketHeight = 0.13
-    s8_stdSprocketWidth = 0.05
+    s8_stdSprocketWidth = 0.07
     #s8_midx = 64
     s8_midy = 240
     r8_frameCrop = Rect("r8_frame_crop", 15, 11, 1383, 1022)

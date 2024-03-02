@@ -814,7 +814,7 @@ class QThreadScan(QtCore.QThread):
         print("post cap")
         request.save("main", imgname)
         print("imgname", imgname)
-        #print(request.get_metadata()) # this is the metadata for this image
+        print(request.get_metadata()) # this is the metadata for this image
         request.release()
         # signal progress
         self.sigProgress.emit(f"{self.frameNo} frames scanned", self.frameNo, self.frame)    
