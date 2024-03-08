@@ -198,6 +198,8 @@ class Window(QMainWindow, Ui_MainWindow):
             print("Selected R8")
             Frame.format = "r8"
             self.film.format = "r8"
+        if self.frame:
+            self.frame.init_format()
         self.adjustableRects = getAdjustableRects()
         self.comboBox.clear()
         for r in self.adjustableRects:

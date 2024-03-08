@@ -5,6 +5,7 @@
 
 from time import sleep
 from threading import Timer
+import datetime
 import cv2
 
 try:
@@ -94,13 +95,14 @@ def ledMinus():
     return led_dc
 
 def spool(dc=100):
-    #Run spool until lever is lifted for rewind or initial slack takeup
+    #Run spool x secs or until lever is lifted for rewind or initial slack takeup
+    endTime = datetime.datetime.now() + datetime.timedelta(seconds = 3)
     print("Run spool")
     GPIO.output(pin_forward, GPIO.HIGH)
     GPIO.output(pin_backward, GPIO.LOW)
     spool_pwm.start(dc) #TODO may not be required
     while True:
-        if not GPIO.input(photoint):
+        if datetime.datetime.now() >= endTime or not GPIO.input(photoint):
             spoolStop()
             return
 

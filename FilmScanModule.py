@@ -291,6 +291,20 @@ class Frame:
         self.ScaleFactor = self.dx/640.0
         self.markup = self.image.copy()
         print(f"Scalefactor {Frame.ScaleFactor}")
+        self.init_format() 
+        self.filmEdge = Frame.filmEdge
+        self.sprocketSize = 0 
+        self.histogram = None
+        self.sprocketHeight = None
+        #self.histogram = cv2.imread(os.path.expanduser("~/my_cv2hist_lim.png"))
+        self.locateHoleResult = 1
+        #print(f"init complete {self.__dict__}")
+        #self.whiteThreshold = self.getWhiteThreshold(self.threshImgPath)
+        #self.analysisType = Frame.analysisType
+        self.filmEdge = int(Frame.filmPlate.x1+30)
+        self.mask = self.getMaskedImage()
+    
+    def init_format(self):
         if Frame.format == "s8":
             print(f"Checking {Frame.s8_stdSprocketWidth}")
             print(f"Checking {Frame.s8_stdSprocketHeight}")
@@ -318,29 +332,12 @@ class Frame:
             self.rX = int(Frame.r8_rX * self.ScaleFactor)
             #self.lX = Frame.r8_lX*self.ScaleFactor
             #self.rX = Frame.r8_rX*self.ScaleFactor
-            #self.rX = self.lX+(Frame.r8_stdSprocketWidth*self.dx)
+            #self.rX = self.lX+(Frame.r8_stdSprocketWidth*self.dx)  
         self.minSprocketHeight = self.stdSprocketHeight*0.7
         self.maxSprocketHeight = self.stdSprocketHeight*1.3
         print(f"Sprocket min {self.minSprocketHeight} max {self.maxSprocketHeight}")
-        #self.midx = 115*self.ScaleFactor   # always overwitten 
-        #self.midy = self.dy//2#240*self.ScaleFactor 
-        #self.cX = self.midx 
         self.cY = self.midy
-        #self.rX = self.cX + self.stdSprocketWidth
-        #self.cX = self.rX+self.lX//2
-        #self.lX = 300
-        self.filmEdge = Frame.filmEdge
-        self.sprocketSize = 0    
-        self.histogram = None
-        self.sprocketHeight = None
-        #self.histogram = cv2.imread(os.path.expanduser("~/my_cv2hist_lim.png"))
-        self.locateHoleResult = 1
-        #print(f"init complete {self.__dict__}")
-        #self.whiteThreshold = self.getWhiteThreshold(self.threshImgPath)
-        #self.analysisType = Frame.analysisType
-        self.filmEdge = int(Frame.filmPlate.x1+30)
-        self.mask = self.getMaskedImage()
-        
+
     def convert_cv_qt(self, cv_img, dest=None):
         """Convert from an opencv image to QPixmap"""
         rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
@@ -927,8 +924,8 @@ class Frame:
 class Film:
     format = "s8"
     resolution = "720x540"
-    s8_framerate = 24
-    r8_framerate = 12
+    s8_framerate = 18
+    r8_framerate = 16
     led_dc = 100
     s8_stepsPrFrame = 100 # value for Standard 8
     r8_stepsPrFrame = 80 # value for Standard 8
