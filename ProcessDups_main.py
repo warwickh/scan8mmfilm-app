@@ -51,7 +51,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.feature_model_vgg = Model(inputs=model.input,outputs=model.get_layer(layer_name).output)
         self.feature_model_resnet = ResNet50(input_tensor=image_input, include_top=False,weights='imagenet')
         self.loaded = False
-        self.cropFolder = os.path.expanduser("~/scanframes/crop/roll11")
+        self.cropFolder = os.path.expanduser("~/scanframes/crop/roll3redo2")
         self.resultPath = os.path.join(self.cropFolder,"dup_results.csv")
         self.dsbUpper.setValue(self.currentUpper)
         self.dsbLower.setValue(self.currentLower)
@@ -162,7 +162,7 @@ class Window(QMainWindow, Ui_MainWindow):
         except:
             return None
 
-    def getNextImages(self):
+    def getNextImages(self, follow=False):
         while True:
             self.currentRow = self.getNextRow()
             if self.currentRow:
@@ -178,6 +178,9 @@ class Window(QMainWindow, Ui_MainWindow):
                     return True
                 elif self.rbtnScene.isChecked() and self.similarity<=self.currentLower:
                     return True
+                elif self.rbtnDup.isChecked() and follow and self.similarity>=0.90: #lower thresh when following a dup
+                    return True
+                follow=False
             else:
                 return False
 
@@ -235,7 +238,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pbtnNotDup.setEnabled(False)
         self.results.append(result)
         self.saveRow(result)
-        if self.getNextImages():
+        if self.getNextImages(True):
             self.loadLblImage(self.img1)
             self.updateInfoPanel()
             self.pbtnDup.setEnabled(True)

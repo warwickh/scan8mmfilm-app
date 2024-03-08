@@ -218,7 +218,7 @@ class Frame:
     s8_holeCrop = Rect("s8_hole_crop", 385, 0, 564, 0) 
     s8_whiteCrop = Rect("s8_white_crop", -185, -109, -27, 122)
     s8_stdSprocketHeight = 0.13
-    s8_stdSprocketWidth = 0.05
+    s8_stdSprocketWidth = 0.07
     #s8_midx = 64
     s8_midy = 240
     r8_frameCrop = Rect("r8_frame_crop", 15, 11, 1383, 1022)
@@ -630,7 +630,7 @@ class Frame:
             x1 = self.holeCrop.x1*self.ScaleFactor
             x2 = self.holeCrop.x2*self.ScaleFactor  
         else:
-            x1 = int(self.lX+(0.01*self.dx))#buffer for rough edge
+            x1 = int(self.lX+(0.02*self.dx))#buffer for rough edge
             x2 = x1+int(self.stdSprocketWidth*0.8)
         
         self.imageHoleCrop = self.image[:,int(x1):int(x1+2*(x2-x1)),:].copy()
@@ -756,7 +756,7 @@ class Frame:
         filmEdge = self.filmEdge
         print(f"Using film edge {self.filmEdge}")
         searchRange = self.stdSprocketWidth*1.2#450 #may need to adjust with image size
-        ratioThresh = 0.15#2#0.1 #may need to adjust with film format
+        ratioThresh = 0.1#2#0.1 #may need to adjust with film format
         step = int(10*self.ScaleFactor) #increase for faster
         searchStart = int(filmEdge+(0.015*self.dx))#buffer for rough edge
         searchEnd = int(searchStart+searchRange)
