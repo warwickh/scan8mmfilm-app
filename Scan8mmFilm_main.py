@@ -7,7 +7,7 @@ from PyQt5.QtCore import pyqtSignal, QTimer
 from PyQt5 import QtCore, QtWidgets
 from FilmScanModule import Ini, Camera, Frame, Film, getAdjustableRects, getAnalysisTypes
 import sys
-from time import sleep
+from time import sleep, time
 import cv2
 import string
 from Scan8mmFilm_ui import Ui_MainWindow
@@ -439,15 +439,17 @@ class Window(QMainWindow, Ui_MainWindow):
     
     def spool(self):
         if picamera2_present:
-            pidevi.spool()
+            pidevi.spool(cont=True)
             
     # Process or timer actions ---------------------------------------------------------------------------------------------------------
 
     def motorTimeout(self) :
-        self.motorTicks = self.motorTicks + 1 
+        self.motorTicks = self.motorTicks + 1
+        print(f"Motorticks {self.motorTicks}") 
         #pidevi.spoolStart()
-        if self.motorTicks > 10 :
+        if self.motorTicks > 600 :
             self.motorStop()
+            self.stop()#Need to troubleshoot tick timeout
         
     def capture_done(self,job):
         image = picam2.wait(job)
@@ -714,7 +716,7 @@ class Window(QMainWindow, Ui_MainWindow):
     def motorStart(self):
         if self.rbtnScan.isChecked():
             self.motorTicks = 0
-            self.timer.start(2000)
+            self.timer.start(5000)
             pidevi.startScanner()
             #pidevi.spoolStart()
 
@@ -814,7 +816,12 @@ class QThreadScan(QtCore.QThread):
         print("pre cap")
         request = picam2.capture_request()
         print("post cap")
+        #self.parent.timer.stop()
+        start = time()
         request.save("main", imgname)
+        print(f"request.save took {time() - start} seconds")
+        #self.parent.motorTicks = 0
+        #self.parent.timer.start(2000)
         print("imgname", imgname)
         print(request.get_metadata()) # this is the metadata for this image
         request.release()

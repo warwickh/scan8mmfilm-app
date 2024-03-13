@@ -94,7 +94,7 @@ def ledMinus():
     led_pwm.ChangeDutyCycle(led_dc)
     return led_dc
 
-def spool(dc=100):
+def spool(dc=100, cont=False):
     #Run spool x secs or until lever is lifted for rewind or initial slack takeup
     endTime = datetime.datetime.now() + datetime.timedelta(seconds = 3)
     print("Run spool")
@@ -102,7 +102,7 @@ def spool(dc=100):
     GPIO.output(pin_backward, GPIO.LOW)
     spool_pwm.start(dc) #TODO may not be required
     while True:
-        if datetime.datetime.now() >= endTime or not GPIO.input(photoint):
+        if (not cont and datetime.datetime.now() >= endTime) or not GPIO.input(photoint):
             spoolStop()
             return
 
